@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accountability OS</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      safelist: [
+        'bg-[#0a0a0f]', 'bg-[#13131a]', 'bg-[#0d0d14]', 'bg-[#1e1e2a]', 'bg-[#1a1a24]', 'bg-[#252530]',
+        'bg-[#b8f0ff]', 'bg-[#a0e0ff]',
+        'text-[#00ff88]', 'text-[#ffaa00]', 'text-[#ff3b3b]',
+        'border-[#00ff88]', 'border-[#1e1e2a]', 'border-[#222]', 'border-[#333]', 'border-[#ff3b3b]',
+        'border-[#0a0a0f]', 'border-[#ffaa00]',
+        'hover:bg-[#1a1a24]', 'hover:bg-[#252530]',
+        'hover:border-[#00ff88]/30', 'hover:shadow-[0_0_20px_rgba(0,255,136,0.05)]',
+        'shadow-[4px_4px_0_#222]', 'shadow-[4px_6px_0_#222]', 'shadow-[3px_3px_0_#222]', 'shadow-[3px_5px_0_#222]',
+        'shadow-[1px_1px_0_#222]', 'shadow-[6px_6px_0_#222]', 'shadow-[3px_3px_0_#c44]',
+        'bg-[#00ff88]', 'bg-[#ff3b3b]/10', 'bg-[#ffaa00]/10', 'bg-[#ff3b3b]/20', 'border-[#ff3b3b]/30', 'border-[#ffaa00]/30',
+        'focus:border-[#00ff88]', 'focus:ring-[#00ff88]/30',
+        'bg-[#0d0d14]/90', 'border-r-3', 'border-b-3',
+        'border-l-4', 'border-2', 'border-3',
+      ],
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Syne', 'sans-serif'],
+            mono: ['Space Mono', 'monospace'],
+            cartoon: ['Fredoka', 'sans-serif'],
+          },
+          borderWidth: {
+            '3': '3px',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Animations */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.5); opacity: 0; }
+    }
+    @keyframes slide-up {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toast-in {
+      from { transform: translateX(120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes toast-out {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .animate-shake { animation: shake 0.4s ease-in-out; }
+    .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    .animate-fade-in { animation: fade-in 0.3s ease-out; }
+    .animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
+    .animate-toast-in { animation: toast-in 0.3s ease-out; }
+    .animate-toast-out { animation: toast-out 0.3s ease-in forwards; }
+
+    /* Scanline texture for dark theme */
+    .scanline-bg {
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255,255,255,0.01) 2px,
+        rgba(255,255,255,0.01) 4px
+      );
+    }
+
+    /* Smooth theme transitions */
+    body, .theme-transition {
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* SVG progress ring animation */
+    .progress-ring-circle {
+      transition: stroke-dashoffset 0.5s ease;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+
+    /* Custom checkbox hide */
+    .custom-check:checked + .check-box { opacity: 1; }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    /* PIN input */
+    .pin-input {
+      caret-color: transparent;
+      text-align: center;
+    }
+    .pin-input:focus {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <nav id="sidebar" class="fixed left-0 top-0 bottom-0 w-16 flex flex-col items-center py-4 gap-2 z-30 theme-transition md:bottom-0 max-md:top-auto max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:w-full max-md:h-16 max-md:flex-row max-md:justify-around max-md:py-0 max-md:px-4">
+    <!-- Nav items rendered by JS -->
+  </nav>
+
+  <!-- Topbar -->
+  <header id="topbar" class="fixed top-0 left-16 right-0 h-14 flex items-center justify-between px-6 z-20 theme-transition max-md:left-0">
+    <!-- Topbar content rendered by JS -->
+  </header>
+
+  <!-- Main content -->
+  <main id="app" class="ml-16 mt-14 p-6 h-[calc(100vh-3.5rem)] overflow-y-auto max-md:ml-0 max-md:mb-16 max-md:h-[calc(100vh-3.5rem-4rem)]">
+    <!-- Views rendered by JS -->
+  </main>
+
+  <!-- Modal overlay -->
+  <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center">
+    <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+    <div id="modal-content" class="relative z-10 w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto animate-slide-up max-md:max-w-none max-md:mx-0 max-md:max-h-full max-md:h-full max-md:rounded-none">
+      <!-- Modal content rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toasts" class="fixed top-16 right-4 z-50 flex flex-col gap-2"></div>
+
+<script>
+// ============================================================
+// Section 1: Theme System
+// ============================================================
+
+const THEMES = {
+  dark: {
+    body: 'bg-[#0a0a0f] text-gray-200 scanline-bg',
+    surface: 'bg-[#13131a] border-[#1e1e2a]',
+    surfaceHover: 'hover:bg-[#1a1a24]',
+    accent: 'text-[#00ff88]',
+    accentBg: 'bg-[#00ff88] text-black',
+    accentBorder: 'border-[#00ff88]',
+    warning: 'text-[#ffaa00]',
+    warningBg: 'bg-[#ffaa00]/10 text-[#ffaa00] border-[#ffaa00]/30',
+    danger: 'text-[#ff3b3b]',
+    dangerBorder: 'border-[#ff3b3b]',
+    dangerBg: 'bg-[#ff3b3b]/10 text-[#ff3b3b] border-[#ff3b3b]/30',
+    heading: 'font-heading',
+    mono: 'font-mono',
+    card: 'bg-[#13131a] border border-[#1e1e2a] rounded-lg',
+    cardHover: 'hover:border-[#00ff88]/30 hover:shadow-[0_0_20px_rgba(0,255,136,0.05)]',
+    button: 'bg-[#00ff88] text-black font-bold rounded-lg hover:brightness-110 active:scale-95',
+    buttonSecondary: 'bg-[#1e1e2a] text-gray-300 rounded-lg hover:bg-[#252530] border border-[#333]',
+    buttonDanger: 'bg-[#ff3b3b]/10 text-[#ff3b3b] rounded-lg hover:bg-[#ff3b3b]/20 border border-[#ff3b3b]/30',
+    input: 'bg-[#0a0a0f] border border-[#333] text-white rounded-lg focus:border-[#00ff88] focus:ring-1 focus:ring-[#00ff88]/30',
+    sidebar: 'bg-[#0d0d14] border-r border-[#1e1e2a]',
+    topbar: 'bg-[#0d0d14]/90 backdrop-blur border-b border-[#1e1e2a]',
+    muted: 'text-gray-500',
+    badge: 'bg-[#1e1e2a] text-gray-300 rounded-full',
+    divider: 'border-[#1e1e2a]',
+    modal: 'bg-[#13131a] border border-[#1e1e2a] rounded-xl',
+    toast: 'bg-[#13131a] border border-[#1e1e2a] text-gray-200 rounded-lg shadow-xl',
+    skeleton: 'bg-[#1e1e2a]',
+    ring: { track: '#1e1e2a', fill: '#00ff88' },
+  },
+  cartoon: {
+    body: 'bg-[#b8f0ff] text-gray-900',
+    surface: 'bg-white border-[#222] border-3',
+    surfaceHover: 'hover:bg-blue-50',
+    accent: 'text-green-600',
+    accentBg: 'bg-green-500 text-white',
+    accentBorder: 'border-green-500',
+    warning: 'text-amber-600',
+    warningBg: 'bg-amber-100 text-amber-700 border-3 border-amber-400',
+    danger: 'text-red-500',
+    dangerBorder: 'border-red-500',
+    dangerBg: 'bg-red-100 text-red-600 border-3 border-red-400',
+    heading: 'font-cartoon',
+    mono: 'font-mono',
+    card: 'bg-white border-3 border-[#222] rounded-2xl shadow-[4px_4px_0_#222]',
+    cardHover: 'hover:-translate-y-0.5 hover:shadow-[4px_6px_0_#222]',
+    button: 'bg-green-500 text-white font-bold rounded-xl border-3 border-[#222] shadow-[3px_3px_0_#222] hover:-translate-y-0.5 hover:shadow-[3px_5px_0_#222] active:translate-y-0 active:shadow-[1px_1px_0_#222]',
+    buttonSecondary: 'bg-purple-100 text-purple-700 font-bold rounded-xl border-3 border-[#222] shadow-[3px_3px_0_#222] hover:-translate-y-0.5',
+    buttonDanger: 'bg-red-100 text-red-600 font-bold rounded-xl border-3 border-red-400 shadow-[3px_3px_0_#c44] hover:-translate-y-0.5',
+    input: 'bg-white border-3 border-[#222] text-gray-900 rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-200',
+    sidebar: 'bg-[#a0e0ff] border-r-3 border-[#222]',
+    topbar: 'bg-[#a0e0ff] border-b-3 border-[#222]',
+    muted: 'text-gray-500',
+    badge: 'bg-purple-100 text-purple-700 rounded-full border-2 border-purple-300 font-cartoon',
+    divider: 'border-[#222]',
+    modal: 'bg-white border-3 border-[#222] rounded-2xl shadow-[6px_6px_0_#222]',
+    toast: 'bg-white border-3 border-[#222] text-gray-900 rounded-xl shadow-[4px_4px_0_#222]',
+    skeleton: 'bg-blue-100',
+    ring: { track: '#e0e0e0', fill: '#22c55e' },
+  }
+};
+
+function t(key) {
+  return THEMES[AppState.theme][key];
+}
+
+// ============================================================
+// Section 2: Config & Constants
+// ============================================================
+
+const DEFAULT_DATA = {
+  users: [
+    {
+      id: 'rik',
+      name: 'Rik',
+      pin: '1234',
+      role: 'admin',
+      avatar: '🔥',
+      active: true,
+      stats: {
+        totalPoints: 0,
+        streak: 0,
+        lastSessionDate: null,
+        sessionsAttended: 0,
+        goalsCompleted: 0,
+        goalsTotal: 0
+      },
+      currentGoals: {
+        priority: [],
+        secondary: [],
+        notToDo: []
+      },
+      sessions: []
+    },
+    {
+      id: 'friend1',
+      name: 'Partner',
+      pin: '5678',
+      role: 'member',
+      avatar: '⚡',
+      active: true,
+      stats: {
+        totalPoints: 0,
+        streak: 0,
+        lastSessionDate: null,
+        sessionsAttended: 0,
+        goalsCompleted: 0,
+        goalsTotal: 0
+      },
+      currentGoals: {
+        priority: [],
+        secondary: [],
+        notToDo: []
+      },
+      sessions: []
+    }
+  ],
+  sessions: [],
+  groups: [],
+  settings: {
+    sessionFrequency: 'weekly',
+    publicShame: true,
+    pointsConfig: {
+      showUp: 10,
+      completeGoal: 25,
+      completeSecondary: 10,
+      maintainNotToDo: 5,
+      peerVoteGood: 15,
+      peerVoteMeh: 7,
+      streakBonus: 5,
+      streakMilestone: 50
+    },
+    githubRepo: '',
+    githubToken: '',
+    anthropicKey: ''
+  }
+};
+
+// ============================================================
+// Section 3: State Management
+// ============================================================
+
+const AppState = {
+  data: null,
+  currentUser: null,
+  currentView: 'login',
+  sha: null,
+  storageMode: 'local', // 'github' | 'local'
+  syncStatus: 'idle', // 'idle' | 'saving' | 'synced' | 'error' | 'offline'
+  theme: localStorage.getItem('accountability_theme') || 'dark',
+};
+
+function setState(updates) {
+  Object.assign(AppState, updates);
+  render();
+}
+
+function setDataAndSave(updater) {
+  updater(AppState.data);
+  render();
+  saveData();
+}
+
+// ============================================================
+// Section 4: GitHub API
+// ============================================================
+
+async function githubRead(settings) {
+  const { githubRepo, githubToken } = settings;
+  if (!githubRepo || !githubToken) throw new Error('GitHub not configured');
+
+  const [owner, repo] = githubRepo.split('/');
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
+    headers: {
+      'Authorization': `token ${githubToken}`,
+      'Accept': 'application/vnd.github.v3+json'
+    }
+  });
+
+  if (!res.ok) throw new Error(`GitHub read failed: ${res.status}`);
+
+  const json = await res.json();
+  AppState.sha = json.sha;
+  const content = atob(json.content.replace(/\n/g, ''));
+  return JSON.parse(content);
+}
+
+async function githubWrite(settings, data, retried = false) {
+  const { githubRepo, githubToken } = settings;
+  if (!githubRepo || !githubToken) throw new Error('GitHub not configured');
+
+  const [owner, repo] = githubRepo.split('/');
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+
+  const body = {
+    message: `Update: ${new Date().toISOString().split('T')[0]}`,
+    content,
+    sha: AppState.sha
+  };
+
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${githubToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (res.status === 409 && !retried) {
+    // Conflict — re-read SHA and retry once
+    await githubRead(settings);
+    return githubWrite(settings, data, true);
+  }
+
+  if (!res.ok) throw new Error(`GitHub write failed: ${res.status}`);
+
+  const json = await res.json();
+  AppState.sha = json.content.sha;
+  return json;
+}
+
+// ============================================================
+// Section 5: localStorage API
+// ============================================================
+
+function localStorageRead() {
+  const raw = localStorage.getItem('accountability_data');
+  if (!raw) return null;
+  return JSON.parse(raw);
+}
+
+function localStorageWrite(data) {
+  localStorage.setItem('accountability_data', JSON.stringify(data));
+}
+
+// ============================================================
+// Section 6: Data Layer
+// ============================================================
+
+async function loadData() {
+  // Try GitHub first
+  const settings = localStorageRead()?.settings || DEFAULT_DATA.settings;
+  if (settings.githubRepo && settings.githubToken) {
+    try {
+      const data = await githubRead(settings);
+      AppState.data = data;
+      AppState.storageMode = 'github';
+      AppState.syncStatus = 'synced';
+      localStorageWrite(data); // backup
+      return;
+    } catch (e) {
+      console.warn('GitHub read failed, trying localStorage:', e.message);
+    }
+  }
+
+  // Try localStorage
+  const local = localStorageRead();
+  if (local) {
+    AppState.data = local;
+    AppState.storageMode = 'local';
+    AppState.syncStatus = settings.githubRepo ? 'offline' : 'idle';
+    return;
+  }
+
+  // Default
+  AppState.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  AppState.storageMode = 'local';
+  AppState.syncStatus = 'idle';
+  localStorageWrite(AppState.data);
+}
+
+let saveTimeout = null;
+function saveData() {
+  // Always save to localStorage immediately
+  localStorageWrite(AppState.data);
+
+  // Debounced GitHub write
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    const { githubRepo, githubToken } = AppState.data.settings;
+    if (githubRepo && githubToken) {
+      try {
+        AppState.syncStatus = 'saving';
+        renderTopbar();
+        await githubWrite(AppState.data.settings, AppState.data);
+        AppState.syncStatus = 'synced';
+      } catch (e) {
+        console.error('GitHub write failed:', e.message);
+        AppState.syncStatus = 'error';
+      }
+      renderTopbar();
+    }
+  }, 500);
+}
+
+// ============================================================
+// Section 7: Router
+// ============================================================
+
+function navigate(view) {
+  location.hash = view;
+  AppState.currentView = view;
+  render();
+}
+
+window.addEventListener('hashchange', () => {
+  const hash = location.hash.slice(1) || 'login';
+  if (hash !== AppState.currentView) {
+    AppState.currentView = hash;
+    render();
+  }
+});
+
+// ============================================================
+// Section 8: Auth
+// ============================================================
+
+function logout() {
+  AppState.currentUser = null;
+  navigate('login');
+}
+
+function getUser(id) {
+  return AppState.data.users.find(u => u.id === id);
+}
+
+function getActiveUsers() {
+  return AppState.data.users.filter(u => u.active !== false);
+}
+
+// ============================================================
+// Section 9: Components
+// ============================================================
+
+function progressRing(percent, size = 80, themeKey = null) {
+  const colors = themeKey || t('ring');
+  const stroke = 6;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percent / 100) * circumference;
+  const center = size / 2;
+
+  return `
+    <svg width="${size}" height="${size}" class="block">
+      <circle cx="${center}" cy="${center}" r="${radius}"
+        stroke="${colors.track}" stroke-width="${stroke}" fill="none" />
+      <circle cx="${center}" cy="${center}" r="${radius}"
+        stroke="${colors.fill}" stroke-width="${stroke}" fill="none"
+        stroke-linecap="round"
+        class="progress-ring-circle"
+        stroke-dasharray="${circumference}"
+        stroke-dashoffset="${offset}" />
+      <text x="${center}" y="${center}" text-anchor="middle" dominant-baseline="central"
+        class="${t('mono')} ${t('accent')}" font-size="${size * 0.22}" fill="currentColor">
+        ${Math.round(percent)}%
+      </text>
+    </svg>
+  `;
+}
+
+function toast(message, type = 'success') {
+  const container = document.getElementById('toasts');
+  const colors = {
+    success: AppState.theme === 'dark' ? 'border-l-4 border-l-[#00ff88]' : 'border-l-4 border-l-green-500',
+    error: AppState.theme === 'dark' ? 'border-l-4 border-l-[#ff3b3b]' : 'border-l-4 border-l-red-500',
+    info: AppState.theme === 'dark' ? 'border-l-4 border-l-blue-400' : 'border-l-4 border-l-blue-500',
+  };
+  const el = document.createElement('div');
+  el.className = `${t('toast')} ${colors[type] || ''} px-4 py-3 animate-toast-in min-w-[250px]`;
+  el.textContent = message;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.remove('animate-toast-in');
+    el.classList.add('animate-toast-out');
+    el.addEventListener('animationend', () => el.remove());
+  }, 3000);
+}
+
+function debounce(fn, ms = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+
+// ============================================================
+// Section 10: Dashboard View
+// ============================================================
+
+function renderDashboard() {
+  const user = AppState.currentUser;
+  if (!user) return navigate('login');
+
+  const goals = user.currentGoals || { priority: [], secondary: [], notToDo: [] };
+  const stats = user.stats || {};
+  const allGoals = [...(goals.priority || []), ...(goals.secondary || [])];
+  const completed = allGoals.filter(g => g.completed).length;
+  const total = allGoals.length;
+  const percent = total > 0 ? (completed / total) * 100 : 0;
+
+  // Session history for this user
+  const userSessions = (AppState.data.sessions || [])
+    .filter(s => s.participants?.includes(user.id))
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 5);
+
+  // Mini leaderboard rank
+  const sorted = getActiveUsers().sort((a, b) => (b.stats?.totalPoints || 0) - (a.stats?.totalPoints || 0));
+  const rank = sorted.findIndex(u => u.id === user.id) + 1;
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="max-w-5xl mx-auto animate-fade-in-up">
+      <!-- Header -->
+      <div class="flex items-center gap-4 mb-6">
+        <span class="text-4xl">${user.avatar}</span>
+        <div>
+          <h1 class="${t('heading')} text-2xl font-bold">${user.name}'s Dashboard</h1>
+          <div class="flex items-center gap-4 mt-1 ${t('muted')} text-sm ${t('mono')}">
+            <span>🔥 ${stats.streak || 0} streak</span>
+            <span class="${t('accent')} font-bold">${stats.totalPoints || 0} pts</span>
+            <span>📋 ${stats.sessionsAttended || 0} sessions</span>
+          </div>
+        </div>
+        <div class="ml-auto">${progressRing(percent, 72)}</div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Priority Goals -->
+        <div class="lg:col-span-2 space-y-3">
+          <h2 class="${t('heading')} text-lg font-bold flex items-center gap-2">
+            🎯 Priority Goals
+            <span class="${t('badge')} text-xs px-2 py-0.5">${(goals.priority || []).length}/3</span>
+          </h2>
+          ${(goals.priority || []).length === 0
+            ? `<div class="${t('card')} p-6 text-center ${t('muted')}">No priority goals yet. Paste a transcript to get started!</div>`
+            : (goals.priority || []).map((goal, i) => goalCard(goal, 'priority', i, true)).join('')
+          }
+
+          <!-- Secondary Goals -->
+          <h2 class="${t('heading')} text-lg font-bold mt-6 flex items-center gap-2">
+            📝 Secondary Goals
+          </h2>
+          ${(goals.secondary || []).length === 0
+            ? `<div class="${t('card')} p-4 text-center ${t('muted')} text-sm">No secondary goals</div>`
+            : (goals.secondary || []).map((goal, i) => goalCard(goal, 'secondary', i, false)).join('')
+          }
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-4">
+          <!-- NOT-to-do -->
+          <h2 class="${t('heading')} text-lg font-bold flex items-center gap-2">
+            🚫 NOT-to-do
+          </h2>
+          ${(goals.notToDo || []).length === 0
+            ? `<div class="${t('card')} ${t('dangerBorder')} border p-4 text-center ${t('muted')} text-sm">No NOT-to-do items</div>`
+            : (goals.notToDo || []).map((item, i) => `
+              <div class="${t('card')} ${t('dangerBorder')} border-l-4 p-3 flex items-center gap-3">
+                <span class="${t('danger')} text-lg">✕</span>
+                <span class="text-sm">${item.text}</span>
+              </div>
+            `).join('')
+          }
+
+          <!-- Stats -->
+          <div class="${t('card')} p-4 mt-4">
+            <h3 class="${t('heading')} font-bold text-sm mb-3">Stats</h3>
+            <div class="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <div class="${t('accent')} ${t('mono')} text-xl font-bold">${stats.goalsCompleted || 0}</div>
+                <div class="${t('muted')} text-xs">Completed</div>
+              </div>
+              <div>
+                <div class="${t('mono')} text-xl font-bold">${stats.goalsTotal || 0}</div>
+                <div class="${t('muted')} text-xs">Total Goals</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mini leaderboard -->
+          <div class="${t('card')} p-4 cursor-pointer ${t('cardHover')}" onclick="navigate('leaderboard')">
+            <div class="flex items-center justify-between">
+              <span class="${t('heading')} font-bold text-sm">🏆 Leaderboard</span>
+              <span class="${t('accent')} ${t('mono')} font-bold">#${rank} of ${sorted.length}</span>
+            </div>
+          </div>
+
+          <!-- Session history -->
+          <div>
+            <h3 class="${t('heading')} font-bold text-sm mb-2">Recent Sessions</h3>
+            ${userSessions.length === 0
+              ? `<div class="${t('muted')} text-sm">No sessions yet</div>`
+              : userSessions.map(s => `
+                <div class="${t('card')} p-3 mb-2 text-sm cursor-pointer ${t('cardHover')}" onclick="toggleSessionDetail('${s.id}')">
+                  <div class="flex justify-between items-center">
+                    <span class="${t('mono')} text-xs ${t('muted')}">${s.date}</span>
+                    <span class="text-xs">${(s.participants || []).length} participants</span>
+                  </div>
+                  <div id="session-${s.id}" class="hidden mt-2 pt-2 border-t ${t('divider')} text-xs ${t('muted')}">
+                    ${s.analysis?.[user.id]?.priorityGoals?.map(g => `<div>• ${g.text}</div>`).join('') || 'No details'}
+                  </div>
+                </div>
+              `).join('')
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function goalCard(goal, type, index, isPriority) {
+  const isOverdue = goal.deadline && new Date(goal.deadline) < new Date() && !goal.completed;
+  const borderClass = isOverdue ? t('dangerBorder') + ' border-l-4' : '';
+  const sizeClass = isPriority ? 'p-4' : 'p-3';
+  const checkId = `goal-${type}-${index}`;
+
+  return `
+    <div class="${t('card')} ${sizeClass} ${borderClass} flex items-start gap-3 ${t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
+      <label class="flex items-center cursor-pointer mt-0.5">
+        <input type="checkbox" class="hidden" id="${checkId}" ${goal.completed ? 'checked' : ''}
+          onchange="toggleGoal('${type}', ${index})">
+        <div class="w-5 h-5 rounded border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center transition-all">
+          ${goal.completed ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+        </div>
+      </label>
+      <div class="flex-1 min-w-0">
+        <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">${goal.text}</div>
+        ${goal.deadline ? `
+          <span class="${isOverdue ? t('dangerBg') : t('warningBg')} text-xs px-2 py-0.5 rounded-full mt-1 inline-block ${t('mono')}">
+            ${isOverdue ? '⚠ Overdue: ' : '📅 '}${goal.deadline}
+          </span>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function toggleGoal(type, index) {
+  const user = AppState.currentUser;
+  const goal = user.currentGoals[type][index];
+  goal.completed = !goal.completed;
+
+  // Recalculate stats
+  const allGoals = [...user.currentGoals.priority, ...user.currentGoals.secondary];
+  user.stats.goalsCompleted = allGoals.filter(g => g.completed).length;
+  user.stats.goalsTotal = allGoals.length;
+
+  // Points
+  recalculatePoints(user.id);
+  saveData();
+  render();
+}
+
+function toggleSessionDetail(id) {
+  const el = document.getElementById(`session-${id}`);
+  if (el) el.classList.toggle('hidden');
+}
+
+// ============================================================
+// Section 11: Admin View
+// ============================================================
+
+function renderAdmin() {
+  const users = getActiveUsers();
+  const sessions = (AppState.data.sessions || []).sort((a, b) => b.date.localeCompare(a.date));
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="max-w-6xl mx-auto animate-fade-in-up">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="${t('heading')} text-2xl font-bold">Admin Dashboard</h1>
+        <button class="${t('button')} px-4 py-2 text-sm" onclick="showTranscriptModal()">
+          + New Session
+        </button>
+      </div>
+
+      <!-- User Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        ${users.map(user => {
+          const goals = user.currentGoals || { priority: [], secondary: [] };
+          const allGoals = [...(goals.priority || []), ...(goals.secondary || [])];
+          const completed = allGoals.filter(g => g.completed).length;
+          const total = allGoals.length;
+          const percent = total > 0 ? (completed / total) * 100 : 0;
+          const topGoal = (goals.priority || [])[0];
+
+          return `
+            <div class="${t('card')} ${t('cardHover')} p-4 cursor-pointer" onclick="toggleAdminUser('${user.id}')">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">${user.avatar}</span>
+                <div class="flex-1 min-w-0">
+                  <div class="${t('heading')} font-bold">${user.name}</div>
+                  <div class="${t('muted')} text-xs ${t('mono')}">🔥 ${user.stats?.streak || 0} · ${user.stats?.totalPoints || 0} pts</div>
+                </div>
+                <div class="shrink-0">${progressRing(percent, 48)}</div>
+              </div>
+              ${topGoal ? `<div class="mt-2 text-xs ${t('muted')} truncate">🎯 ${topGoal.text}</div>` : ''}
+              <div id="admin-user-${user.id}" class="hidden mt-3 pt-3 border-t ${t('divider')} space-y-1">
+                <div class="text-xs font-bold mb-1">Priority Goals:</div>
+                ${(goals.priority || []).map((g, i) => `
+                  <div class="flex items-center gap-2 text-xs">
+                    <span>${g.completed ? '✅' : '⬜'}</span>
+                    <span class="${g.completed ? 'line-through ' + t('muted') : ''}">${g.text}</span>
+                  </div>
+                `).join('') || '<div class="text-xs ' + t('muted') + '">None</div>'}
+                <div class="text-xs font-bold mt-2 mb-1">Secondary:</div>
+                ${(goals.secondary || []).map((g, i) => `
+                  <div class="flex items-center gap-2 text-xs">
+                    <span>${g.completed ? '✅' : '⬜'}</span>
+                    <span class="${g.completed ? 'line-through ' + t('muted') : ''}">${g.text}</span>
+                  </div>
+                `).join('') || '<div class="text-xs ' + t('muted') + '">None</div>'}
+                <button class="${t('buttonSecondary')} text-xs px-3 py-1 mt-2" onclick="event.stopPropagation(); showGoalOverride('${user.id}')">
+                  ✏️ Edit Goals
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Session Log -->
+      <h2 class="${t('heading')} text-lg font-bold mb-3">Session Log</h2>
+      ${sessions.length === 0
+        ? `<div class="${t('card')} p-8 text-center ${t('muted')}">No sessions yet. Click "New Session" to paste your first transcript.</div>`
+        : `<div class="space-y-2">
+            ${sessions.slice(0, 20).map(s => `
+              <div class="${t('card')} p-3 cursor-pointer ${t('cardHover')}" onclick="toggleSessionDetail('admin-${s.id}')">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="${t('mono')} text-sm">${s.date}</span>
+                    <span class="text-sm">${(s.participants || []).map(id => getUser(id)?.avatar || '?').join(' ')}</span>
+                  </div>
+                  <span class="${t('muted')} text-xs">${Object.keys(s.analysis || {}).reduce((sum, uid) => sum + (s.analysis[uid]?.priorityGoals?.length || 0), 0)} goals</span>
+                </div>
+                <div id="session-admin-${s.id}" class="hidden mt-2 pt-2 border-t ${t('divider')} text-xs">
+                  ${s.sessionSummary ? `<div class="${t('muted')} mb-2">${s.sessionSummary}</div>` : ''}
+                  ${(s.participants || []).map(uid => {
+                    const a = s.analysis?.[uid];
+                    const u = getUser(uid);
+                    if (!a) return '';
+                    return `
+                      <div class="mb-2">
+                        <div class="font-bold">${u?.avatar || ''} ${u?.name || uid}:</div>
+                        ${(a.priorityGoals || []).map(g => `<div class="ml-3">🎯 ${g.text}</div>`).join('')}
+                        ${(a.secondaryGoals || []).map(g => `<div class="ml-3">📝 ${g.text}</div>`).join('')}
+                        ${(a.notToDo || []).map(g => `<div class="ml-3">🚫 ${g.text}</div>`).join('')}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `).join('')}
+            ${sessions.length > 20 ? `<div class="${t('muted')} text-center text-sm py-2">+ ${sessions.length - 20} more sessions</div>` : ''}
+          </div>`
+      }
+    </div>
+  `;
+}
+
+function toggleAdminUser(id) {
+  const el = document.getElementById(`admin-user-${id}`);
+  if (el) el.classList.toggle('hidden');
+}
+
+function showGoalOverride(userId) {
+  const user = getUser(userId);
+  if (!user) return;
+  const goals = user.currentGoals || { priority: [], secondary: [], notToDo: [] };
+
+  function renderGoalList(list, label) {
+    return list.map((g, i) => `
+      <div class="flex items-center gap-2 mb-1">
+        <input type="text" value="${g.text}" class="${t('input')} text-xs px-2 py-1 flex-1" id="override-${label}-${i}">
+        <button class="${t('buttonDanger')} text-xs px-2 py-1" onclick="removeOverrideGoal('${userId}', '${label}', ${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  showModal(`
+    <div class="p-6">
+      <h2 class="${t('heading')} text-xl font-bold mb-4">${user.avatar} ${user.name} — Edit Goals</h2>
+
+      <div class="mb-4">
+        <label class="text-sm font-bold block mb-1">🎯 Priority Goals</label>
+        <div id="override-priority-list">${renderGoalList(goals.priority || [], 'priority')}</div>
+        <button class="${t('buttonSecondary')} text-xs px-2 py-1 mt-1" onclick="addOverrideGoal('${userId}', 'priority')">+ Add</button>
+      </div>
+
+      <div class="mb-4">
+        <label class="text-sm font-bold block mb-1">📝 Secondary Goals</label>
+        <div id="override-secondary-list">${renderGoalList(goals.secondary || [], 'secondary')}</div>
+        <button class="${t('buttonSecondary')} text-xs px-2 py-1 mt-1" onclick="addOverrideGoal('${userId}', 'secondary')">+ Add</button>
+      </div>
+
+      <div class="mb-4">
+        <label class="text-sm font-bold block mb-1">🚫 NOT-to-do</label>
+        <div id="override-notToDo-list">${renderGoalList(goals.notToDo || [], 'notToDo')}</div>
+        <button class="${t('buttonSecondary')} text-xs px-2 py-1 mt-1" onclick="addOverrideGoal('${userId}', 'notToDo')">+ Add</button>
+      </div>
+
+      <div class="flex gap-2 mt-6">
+        <button class="${t('button')} px-4 py-2 text-sm flex-1" onclick="saveGoalOverride('${userId}')">Save</button>
+        <button class="${t('buttonSecondary')} px-4 py-2 text-sm" onclick="hideModal()">Cancel</button>
+      </div>
+    </div>
+  `);
+}
+
+function addOverrideGoal(userId, type) {
+  const user = getUser(userId);
+  if (!user.currentGoals[type]) user.currentGoals[type] = [];
+  user.currentGoals[type].push({ text: '', completed: false });
+  showGoalOverride(userId); // re-render modal
+}
+
+function removeOverrideGoal(userId, type, index) {
+  const user = getUser(userId);
+  user.currentGoals[type].splice(index, 1);
+  showGoalOverride(userId);
+}
+
+function saveGoalOverride(userId) {
+  const user = getUser(userId);
+  ['priority', 'secondary', 'notToDo'].forEach(type => {
+    const list = user.currentGoals[type] || [];
+    list.forEach((g, i) => {
+      const input = document.getElementById(`override-${type}-${i}`);
+      if (input) g.text = input.value;
+    });
+    // Remove empty entries
+    user.currentGoals[type] = list.filter(g => g.text.trim());
+  });
+
+  // Update stats
+  const allGoals = [...user.currentGoals.priority, ...user.currentGoals.secondary];
+  user.stats.goalsCompleted = allGoals.filter(g => g.completed).length;
+  user.stats.goalsTotal = allGoals.length;
+
+  saveData();
+  hideModal();
+  render();
+  toast('Goals updated');
+}
+
+// ============================================================
+// Section 12: Transcript Modal (Claude API)
+// ============================================================
+
+function showTranscriptModal() {
+  const users = getActiveUsers();
+
+  showModal(`
+    <div class="p-6">
+      <h2 class="${t('heading')} text-xl font-bold mb-4">📋 New Session</h2>
+
+      <div class="mb-4">
+        <label class="text-sm font-bold block mb-2">Participants</label>
+        <div class="flex flex-wrap gap-2">
+          ${users.map(u => `
+            <label class="${t('card')} px-3 py-2 cursor-pointer flex items-center gap-2 text-sm ${t('cardHover')}">
+              <input type="checkbox" class="transcript-participant" value="${u.id}" checked>
+              <span>${u.avatar} ${u.name}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="text-sm font-bold block mb-2">Paste Transcript</label>
+        <textarea id="transcript-input" class="${t('input')} w-full h-48 p-3 text-sm resize-none" placeholder="Paste your Granola transcript here..."></textarea>
+      </div>
+
+      <div id="transcript-error" class="hidden ${t('dangerBg')} p-3 rounded-lg mb-4 text-sm"></div>
+
+      <button id="analyse-btn" class="${t('button')} w-full py-3 text-sm" onclick="analyseTranscript()">
+        🔍 Analyse Transcript
+      </button>
+
+      <div id="transcript-loading" class="hidden text-center py-8">
+        <div class="inline-block w-8 h-8 border-4 ${t('accentBorder')} border-t-transparent rounded-full animate-spin"></div>
+        <div class="${t('muted')} mt-2 text-sm">Claude is analysing the transcript...</div>
+      </div>
+
+      <div id="transcript-results" class="hidden mt-4"></div>
+    </div>
+  `);
+}
+
+async function analyseTranscript() {
+  const apiKey = AppState.data.settings.anthropicKey;
+  if (!apiKey) {
+    showError('transcript-error', 'Set your Anthropic API key in Settings first.');
+    return;
+  }
+
+  const textarea = document.getElementById('transcript-input');
+  const transcript = textarea.value.trim();
+  if (!transcript) {
+    showError('transcript-error', 'Paste a transcript first.');
+    return;
+  }
+
+  const participants = Array.from(document.querySelectorAll('.transcript-participant:checked')).map(el => el.value);
+  if (participants.length === 0) {
+    showError('transcript-error', 'Select at least one participant.');
+    return;
+  }
+
+  const participantNames = participants.map(id => getUser(id)?.name || id).join(', ');
+
+  // Show loading
+  document.getElementById('analyse-btn').classList.add('hidden');
+  document.getElementById('transcript-loading').classList.remove('hidden');
+  document.getElementById('transcript-error').classList.add('hidden');
+
+  const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.
+
+Participants in this session: ${participantNames}
+
+For each participant, extract:
+1. priorityGoals: Their top 1-3 goals for the next period (specific, actionable)
+2. secondaryGoals: Other goals or intentions mentioned
+3. notToDo: Explicit commitments to STOP doing or AVOID
+4. deadlines: Any specific dates or timeframes mentioned per goal
+5. mood: Overall energy/mood inferred from transcript (low/medium/high)
+
+Return ONLY valid JSON in this exact structure, no other text:
+{
+  "participants": {
+    "NAME": {
+      "priorityGoals": [{ "text": "...", "deadline": "YYYY-MM-DD or null" }],
+      "secondaryGoals": [{ "text": "...", "deadline": null }],
+      "notToDo": [{ "text": "..." }],
+      "mood": "low|medium|high"
+    }
+  },
+  "sessionSummary": "2-3 sentence summary of the session themes"
+}
+
+Use the exact participant names provided above as keys in the JSON.
+
+Transcript:
+${transcript}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: systemPrompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // Extract JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse JSON from response');
+
+    const analysis = JSON.parse(jsonMatch[0]);
+    showTranscriptPreview(analysis, participants, transcript);
+
+  } catch (err) {
+    document.getElementById('transcript-loading').classList.add('hidden');
+    document.getElementById('analyse-btn').classList.remove('hidden');
+    showError('transcript-error', err.message);
+  }
+}
+
+function showTranscriptPreview(analysis, participants, transcript) {
+  const results = document.getElementById('transcript-results');
+  const loading = document.getElementById('transcript-loading');
+  loading.classList.add('hidden');
+  results.classList.remove('hidden');
+
+  // Map participant names to IDs
+  const nameToId = {};
+  participants.forEach(id => {
+    const user = getUser(id);
+    if (user) nameToId[user.name] = id;
+  });
+
+  let html = `<h3 class="${t('heading')} font-bold mb-3">Preview Results</h3>`;
+
+  if (analysis.sessionSummary) {
+    html += `<div class="${t('card')} p-3 mb-4 text-sm ${t('muted')}">${analysis.sessionSummary}</div>`;
+  }
+
+  const participantData = analysis.participants || {};
+  for (const [name, data] of Object.entries(participantData)) {
+    const userId = nameToId[name] || name.toLowerCase();
+    const user = getUser(userId);
+    const moodEmoji = { low: '😔', medium: '😐', high: '🔥' };
+
+    html += `
+      <div class="${t('card')} p-4 mb-3">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xl">${user?.avatar || '❓'}</span>
+          <span class="${t('heading')} font-bold">${name}</span>
+          <span class="${t('badge')} text-xs px-2 py-0.5">${moodEmoji[data.mood] || '😐'} ${data.mood || 'medium'}</span>
+        </div>
+
+        <div class="space-y-2">
+          <div class="text-xs font-bold ${t('accent')}">🎯 Priority Goals</div>
+          ${(data.priorityGoals || []).map((g, i) => `
+            <div class="flex items-center gap-2">
+              <input type="text" value="${g.text}" class="${t('input')} text-xs px-2 py-1 flex-1" data-preview="${userId}-priority-${i}-text">
+              <input type="text" value="${g.deadline || ''}" placeholder="YYYY-MM-DD" class="${t('input')} text-xs px-2 py-1 w-28" data-preview="${userId}-priority-${i}-deadline">
+            </div>
+          `).join('')}
+
+          <div class="text-xs font-bold mt-2">📝 Secondary Goals</div>
+          ${(data.secondaryGoals || []).map((g, i) => `
+            <input type="text" value="${g.text}" class="${t('input')} text-xs px-2 py-1 w-full" data-preview="${userId}-secondary-${i}-text">
+          `).join('')}
+
+          <div class="text-xs font-bold mt-2 ${t('danger')}">🚫 NOT-to-do</div>
+          ${(data.notToDo || []).map((g, i) => `
+            <input type="text" value="${g.text}" class="${t('input')} text-xs px-2 py-1 w-full" data-preview="${userId}-notToDo-${i}-text">
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  html += `
+    <button class="${t('button')} w-full py-3 text-sm mt-4" onclick="saveSession(${JSON.stringify(participants).replace(/"/g, '&quot;')}, ${JSON.stringify(JSON.stringify(analysis)).slice(1, -1).replace(/"/g, '&quot;')}, '${btoa(unescape(encodeURIComponent(transcript.substring(0, 5000))))}')">
+      ✅ Confirm & Save Session
+    </button>
+  `;
+
+  results.innerHTML = html;
+}
+
+function saveSession(participants, analysisJson, transcriptB64) {
+  const analysis = JSON.parse(analysisJson);
+  const transcript = decodeURIComponent(escape(atob(transcriptB64)));
+  const today = new Date().toISOString().split('T')[0];
+  const sessionId = `session_${today}_${Date.now()}`;
+
+  // Read edited values from preview inputs
+  const nameToId = {};
+  participants.forEach(id => {
+    const user = getUser(id);
+    if (user) nameToId[user.name] = id;
+  });
+
+  const sessionAnalysis = {};
+  const participantData = analysis.participants || {};
+
+  for (const [name, data] of Object.entries(participantData)) {
+    const userId = nameToId[name] || name.toLowerCase();
+
+    // Read edited values
+    const priorityGoals = (data.priorityGoals || []).map((g, i) => {
+      const textEl = document.querySelector(`[data-preview="${userId}-priority-${i}-text"]`);
+      const deadlineEl = document.querySelector(`[data-preview="${userId}-priority-${i}-deadline"]`);
+      return {
+        text: textEl?.value || g.text,
+        deadline: deadlineEl?.value || g.deadline || null,
+        completed: false
+      };
+    });
+    const secondaryGoals = (data.secondaryGoals || []).map((g, i) => {
+      const textEl = document.querySelector(`[data-preview="${userId}-secondary-${i}-text"]`);
+      return { text: textEl?.value || g.text, deadline: null, completed: false };
+    });
+    const notToDo = (data.notToDo || []).map((g, i) => {
+      const textEl = document.querySelector(`[data-preview="${userId}-notToDo-${i}-text"]`);
+      return { text: textEl?.value || g.text };
+    });
+
+    sessionAnalysis[userId] = {
+      priorityGoals,
+      secondaryGoals,
+      notToDo,
+      mood: data.mood || 'medium',
+      pointsAwarded: AppState.data.settings.pointsConfig.showUp
+    };
+
+    // Update user's current goals
+    const user = getUser(userId);
+    if (user) {
+      user.currentGoals = {
+        priority: priorityGoals,
+        secondary: secondaryGoals,
+        notToDo: notToDo
+      };
+      user.stats.sessionsAttended = (user.stats.sessionsAttended || 0) + 1;
+      user.stats.lastSessionDate = today;
+      user.stats.goalsTotal = priorityGoals.length + secondaryGoals.length;
+      user.stats.goalsCompleted = 0;
+      if (!user.sessions) user.sessions = [];
+      user.sessions.push(sessionId);
+    }
+  }
+
+  // Create session object
+  const session = {
+    id: sessionId,
+    date: today,
+    participants,
+    transcript: transcript.substring(0, 10000),
+    analysis: sessionAnalysis,
+    sessionSummary: analysis.sessionSummary || ''
+  };
+
+  AppState.data.sessions.push(session);
+
+  // Award points + recalculate
+  participants.forEach(id => recalculatePoints(id));
+
+  saveData();
+  hideModal();
+  render();
+  toast('Session saved! Goals updated for all participants.');
+}
+
+function showError(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (el) {
+    el.textContent = message;
+    el.classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// Section 13: Gamification
+// ============================================================
+
+function recalculatePoints(userId) {
+  const user = getUser(userId);
+  if (!user) return;
+
+  const config = AppState.data.settings.pointsConfig;
+  let total = 0;
+
+  // Session attendance points
+  total += (user.stats.sessionsAttended || 0) * config.showUp;
+
+  // Goal completion points
+  const priority = user.currentGoals?.priority || [];
+  const secondary = user.currentGoals?.secondary || [];
+  total += priority.filter(g => g.completed).length * config.completeGoal;
+  total += secondary.filter(g => g.completed).length * config.completeSecondary;
+
+  // Check all sessions for historical goal completions
+  // (simplified — counts current goals only for v1)
+
+  // Streak calculation
+  const streak = calculateStreak(userId);
+  user.stats.streak = streak;
+  total += streak * config.streakBonus;
+
+  // Streak milestones
+  [5, 10, 20].forEach(milestone => {
+    if (streak >= milestone) total += config.streakMilestone;
+  });
+
+  // Peer votes from sessions
+  (AppState.data.sessions || []).forEach(s => {
+    const votes = s.analysis?.[userId]?.peerVotes || [];
+    votes.forEach(v => {
+      if (v.vote === 'good') total += config.peerVoteGood;
+      else if (v.vote === 'meh') total += config.peerVoteMeh;
+    });
+  });
+
+  user.stats.totalPoints = total;
+  user.stats.goalsCompleted = [...priority, ...secondary].filter(g => g.completed).length;
+  user.stats.goalsTotal = priority.length + secondary.length;
+}
+
+function calculateStreak(userId) {
+  const user = getUser(userId);
+  if (!user) return 0;
+
+  const sessions = (AppState.data.sessions || [])
+    .filter(s => s.participants?.includes(userId))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (sessions.length === 0) return 0;
+
+  const freq = AppState.data.settings.sessionFrequency === 'biweekly' ? 14 : 7;
+  let streak = 0;
+  let expectedDate = new Date();
+
+  for (const session of sessions) {
+    const sessionDate = new Date(session.date);
+    const diffDays = Math.floor((expectedDate - sessionDate) / (1000 * 60 * 60 * 24));
+
+    if (diffDays > freq + 3) break; // allow 3 day grace period
+
+    // Check if at least 1 priority goal was completed for this session
+    const analysis = session.analysis?.[userId];
+    const hadGoalComplete = analysis?.priorityGoals?.some(g => g.completed);
+
+    if (hadGoalComplete !== false) { // count if goals were completed OR if it's a new session with no completions yet
+      streak++;
+    }
+
+    expectedDate = new Date(sessionDate);
+    expectedDate.setDate(expectedDate.getDate() - freq);
+  }
+
+  return streak;
+}
+
+// ============================================================
+// Section 14: Leaderboard View
+// ============================================================
+
+function renderLeaderboard() {
+  const users = getActiveUsers().sort((a, b) => (b.stats?.totalPoints || 0) - (a.stats?.totalPoints || 0));
+  const publicShame = AppState.data.settings.publicShame;
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="max-w-2xl mx-auto animate-fade-in-up">
+      <h1 class="${t('heading')} text-2xl font-bold mb-6 text-center">🏆 Leaderboard</h1>
+
+      <div class="space-y-3">
+        ${users.map((user, i) => {
+          const isFirst = i === 0;
+          const isSlipping = publicShame && (user.currentGoals?.priority || []).length > 0 &&
+            (user.currentGoals?.priority || []).every(g => !g.completed);
+          const delay = i * 0.1;
+
+          return `
+            <div class="${t('card')} p-4 flex items-center gap-4 animate-fade-in-up ${isFirst ? t('accentBorder') + ' border-2' : ''}"
+              style="animation-delay: ${delay}s">
+              <div class="${t('mono')} text-2xl font-bold w-10 text-center ${isFirst ? t('accent') : t('muted')}">
+                ${isFirst ? '👑' : `#${i + 1}`}
+              </div>
+              <span class="text-3xl">${user.avatar}</span>
+              <div class="flex-1">
+                <div class="${t('heading')} font-bold">${user.name}</div>
+                <div class="flex items-center gap-3 text-xs ${t('muted')} ${t('mono')}">
+                  <span>🔥 ${user.stats?.streak || 0}</span>
+                  <span>📋 ${user.stats?.sessionsAttended || 0} sessions</span>
+                  ${isSlipping ? `<span class="${t('danger')} font-bold">🚨 Slipping</span>` : ''}
+                </div>
+              </div>
+              <div class="${t('accent')} ${t('mono')} text-xl font-bold">${user.stats?.totalPoints || 0}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${publicShame ? `
+        <div class="mt-8">
+          <h2 class="${t('heading')} font-bold ${t('danger')} mb-3">🚨 Wall of Shame</h2>
+          ${users.filter(u => {
+            const p = u.currentGoals?.priority || [];
+            return p.length > 0 && p.every(g => !g.completed);
+          }).map(u => `
+            <div class="${t('card')} ${t('dangerBorder')} border-l-4 p-3 mb-2 flex items-center gap-3">
+              <span class="text-xl">${u.avatar}</span>
+              <div>
+                <span class="font-bold">${u.name}</span>
+                <span class="${t('danger')} text-xs ml-2">0 priority goals completed</span>
+              </div>
+            </div>
+          `).join('') || `<div class="${t('muted')} text-sm">Everyone's doing great! 💪</div>`}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ============================================================
+// Section 15: Settings View
+// ============================================================
+
+function renderSettings() {
+  const s = AppState.data.settings;
+  const users = AppState.data.users;
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="max-w-2xl mx-auto animate-fade-in-up space-y-6">
+      <h1 class="${t('heading')} text-2xl font-bold">⚙️ Settings</h1>
+
+      <!-- API Keys -->
+      <div class="${t('card')} p-5">
+        <h2 class="${t('heading')} font-bold mb-4">🔑 API Keys</h2>
+        <div class="space-y-3">
+          <div>
+            <label class="text-sm font-medium block mb-1">Anthropic API Key</label>
+            <input type="password" id="setting-anthropicKey" value="${s.anthropicKey || ''}"
+              class="${t('input')} w-full px-3 py-2 text-sm" placeholder="sk-ant-...">
+          </div>
+          <div>
+            <label class="text-sm font-medium block mb-1">GitHub Repository</label>
+            <input type="text" id="setting-githubRepo" value="${s.githubRepo || ''}"
+              class="${t('input')} w-full px-3 py-2 text-sm" placeholder="owner/repo">
+          </div>
+          <div>
+            <label class="text-sm font-medium block mb-1">GitHub Personal Access Token</label>
+            <input type="password" id="setting-githubToken" value="${s.githubToken || ''}"
+              class="${t('input')} w-full px-3 py-2 text-sm" placeholder="ghp_...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Session Config -->
+      <div class="${t('card')} p-5">
+        <h2 class="${t('heading')} font-bold mb-4">📅 Session Config</h2>
+        <div>
+          <label class="text-sm font-medium block mb-1">Session Frequency</label>
+          <select id="setting-frequency" class="${t('input')} w-full px-3 py-2 text-sm">
+            <option value="weekly" ${s.sessionFrequency === 'weekly' ? 'selected' : ''}>Weekly</option>
+            <option value="biweekly" ${s.sessionFrequency === 'biweekly' ? 'selected' : ''}>Biweekly</option>
+          </select>
+        </div>
+        <div class="mt-3 flex items-center gap-2">
+          <input type="checkbox" id="setting-shame" ${s.publicShame ? 'checked' : ''} class="w-4 h-4">
+          <label for="setting-shame" class="text-sm">Enable Public Shame on Leaderboard</label>
+        </div>
+      </div>
+
+      <!-- Point Values -->
+      <div class="${t('card')} p-5">
+        <h2 class="${t('heading')} font-bold mb-4">🎮 Point Values</h2>
+        <div class="grid grid-cols-2 gap-3">
+          ${Object.entries(s.pointsConfig).map(([key, val]) => `
+            <div>
+              <label class="text-xs ${t('muted')} block mb-1">${formatPointKey(key)}</label>
+              <input type="number" id="setting-points-${key}" value="${val}"
+                class="${t('input')} w-full px-3 py-2 text-sm ${t('mono')}">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <button class="${t('button')} w-full py-3 text-sm" onclick="saveSettings()">
+        💾 Save Settings
+      </button>
+
+      <!-- User Management -->
+      <div class="${t('card')} p-5">
+        <h2 class="${t('heading')} font-bold mb-4">👥 Users</h2>
+        <div class="space-y-2 mb-4">
+          ${users.map(u => `
+            <div class="flex items-center justify-between ${u.active === false ? 'opacity-40' : ''}">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">${u.avatar}</span>
+                <span class="font-medium">${u.name}</span>
+                <span class="${t('badge')} text-xs px-2 py-0.5">${u.role}</span>
+              </div>
+              ${u.active !== false
+                ? `<button class="${t('buttonDanger')} text-xs px-2 py-1" onclick="removeUser('${u.id}')">Remove</button>`
+                : `<span class="${t('muted')} text-xs">Inactive</span>`
+              }
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="border-t ${t('divider')} pt-4">
+          <h3 class="text-sm font-bold mb-2">Add User</h3>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="text" id="new-user-name" class="${t('input')} px-3 py-2 text-sm" placeholder="Name">
+            <input type="text" id="new-user-pin" class="${t('input')} px-3 py-2 text-sm" placeholder="4-digit PIN" maxlength="4">
+            <input type="text" id="new-user-avatar" class="${t('input')} px-3 py-2 text-sm" placeholder="Emoji 🎯" maxlength="2">
+            <select id="new-user-role" class="${t('input')} px-3 py-2 text-sm">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="${t('buttonSecondary')} w-full py-2 text-sm mt-2" onclick="addUser()">
+            + Add User
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function formatPointKey(key) {
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
+}
+
+function saveSettings() {
+  const s = AppState.data.settings;
+  s.anthropicKey = document.getElementById('setting-anthropicKey').value.trim();
+  s.githubRepo = document.getElementById('setting-githubRepo').value.trim();
+  s.githubToken = document.getElementById('setting-githubToken').value.trim();
+  s.sessionFrequency = document.getElementById('setting-frequency').value;
+  s.publicShame = document.getElementById('setting-shame').checked;
+
+  Object.keys(s.pointsConfig).forEach(key => {
+    const el = document.getElementById(`setting-points-${key}`);
+    if (el) s.pointsConfig[key] = parseInt(el.value) || 0;
+  });
+
+  saveData();
+  toast('Settings saved!');
+}
+
+function addUser() {
+  const name = document.getElementById('new-user-name').value.trim();
+  const pin = document.getElementById('new-user-pin').value.trim();
+  const avatar = document.getElementById('new-user-avatar').value.trim() || '👤';
+  const role = document.getElementById('new-user-role').value;
+
+  if (!name || !pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+    toast('Enter a name and 4-digit PIN', 'error');
+    return;
+  }
+
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (getUser(id)) {
+    toast('User already exists', 'error');
+    return;
+  }
+
+  AppState.data.users.push({
+    id, name, pin, role, avatar,
+    active: true,
+    stats: { totalPoints: 0, streak: 0, lastSessionDate: null, sessionsAttended: 0, goalsCompleted: 0, goalsTotal: 0 },
+    currentGoals: { priority: [], secondary: [], notToDo: [] },
+    sessions: []
+  });
+
+  saveData();
+  render();
+  toast(`${avatar} ${name} added!`);
+}
+
+function removeUser(id) {
+  const user = getUser(id);
+  if (!user) return;
+  if (!confirm(`Remove ${user.name}? Their history will be kept.`)) return;
+  user.active = false;
+  saveData();
+  render();
+  toast(`${user.name} removed`);
+}
+
+// ============================================================
+// Section 16: Peer Vote
+// ============================================================
+
+function showPeerVoteModal(sessionId) {
+  const session = AppState.data.sessions.find(s => s.id === sessionId);
+  if (!session || !AppState.currentUser) return;
+
+  const otherParticipants = session.participants.filter(id => id !== AppState.currentUser.id);
+
+  showModal(`
+    <div class="p-6">
+      <h2 class="${t('heading')} text-xl font-bold mb-4">Rate Your Partners</h2>
+      <div class="space-y-4">
+        ${otherParticipants.map(id => {
+          const user = getUser(id);
+          return `
+            <div class="${t('card')} p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-2xl">${user?.avatar || '?'}</span>
+                <span class="${t('heading')} font-bold">${user?.name || id}</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="${t('buttonDanger')} flex-1 py-2" onclick="castVote('${sessionId}', '${id}', 'bad')">👎</button>
+                <button class="${t('buttonSecondary')} flex-1 py-2" onclick="castVote('${sessionId}', '${id}', 'meh')">😐</button>
+                <button class="${t('button')} flex-1 py-2" onclick="castVote('${sessionId}', '${id}', 'good')">👍</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `);
+}
+
+function castVote(sessionId, targetId, vote) {
+  const session = AppState.data.sessions.find(s => s.id === sessionId);
+  if (!session?.analysis?.[targetId]) return;
+
+  if (!session.analysis[targetId].peerVotes) session.analysis[targetId].peerVotes = [];
+  session.analysis[targetId].peerVotes.push({
+    from: AppState.currentUser.id,
+    vote
+  });
+
+  recalculatePoints(targetId);
+  saveData();
+  hideModal();
+  toast('Vote recorded!');
+}
+
+// ============================================================
+// Section 17: Modal
+// ============================================================
+
+function showModal(html) {
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modal-content');
+  content.className = `relative z-10 w-full max-w-xl mx-4 max-h-[85vh] overflow-y-auto animate-slide-up ${t('modal')} max-md:max-w-none max-md:mx-0 max-md:max-h-full max-md:h-full max-md:rounded-none`;
+  content.innerHTML = html;
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function hideModal() {
+  const modal = document.getElementById('modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideModal();
+});
+
+document.getElementById('modal-backdrop')?.addEventListener('click', hideModal);
+
+// ============================================================
+// Section 18: Render + Topbar + Sidebar
+// ============================================================
+
+function render() {
+  applyTheme();
+  renderSidebar();
+  renderTopbar();
+
+  switch (AppState.currentView) {
+    case 'login': renderLogin(); break;
+    case 'dashboard': renderDashboard(); break;
+    case 'admin': renderAdmin(); break;
+    case 'leaderboard': renderLeaderboard(); break;
+    case 'settings': renderSettings(); break;
+    default: renderLogin();
+  }
+}
+
+function applyTheme() {
+  const body = document.body;
+  // Remove all theme classes first
+  body.className = `min-h-screen overflow-hidden ${t('body')} theme-transition`;
+}
+
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const user = AppState.currentUser;
+  const isAdmin = user?.role === 'admin';
+  const view = AppState.currentView;
+
+  sidebar.className = `fixed left-0 top-0 bottom-0 w-16 flex flex-col items-center py-4 gap-2 z-30 theme-transition ${t('sidebar')} max-md:top-auto max-md:left-0 max-md:right-0 max-md:bottom-0 max-md:w-full max-md:h-16 max-md:flex-row max-md:justify-around max-md:py-0 max-md:px-4`;
+
+  if (!user || AppState.currentView === 'login') {
+    sidebar.innerHTML = `<div class="text-xl mt-2">🎯</div>`;
+    return;
+  }
+
+  const navItems = [
+    { icon: '📊', view: isAdmin ? 'admin' : 'dashboard', label: isAdmin ? 'Admin' : 'Dashboard' },
+    { icon: '🏆', view: 'leaderboard', label: 'Leaderboard' },
+    { icon: '⚙️', view: 'settings', label: 'Settings' },
+  ];
+
+  sidebar.innerHTML = `
+    <div class="text-xl mb-4 max-md:hidden">🎯</div>
+    ${navItems.map(item => `
+      <button onclick="navigate('${item.view}')"
+        class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all
+          ${view === item.view ? t('accentBg') + ' scale-110' : t('surfaceHover')}"
+        title="${item.label}">
+        ${item.icon}
+      </button>
+    `).join('')}
+    ${isAdmin ? `
+      <div class="flex-1 max-md:hidden"></div>
+      <button onclick="navigate('dashboard')"
+        class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${view === 'dashboard' ? t('accentBg') + ' scale-110' : t('surfaceHover')}"
+        title="My Dashboard">
+        👤
+      </button>
+    ` : ''}
+    <div class="flex-1 max-md:hidden"></div>
+    <button onclick="logout()"
+      class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t('surfaceHover')}"
+      title="Logout">
+      🚪
+    </button>
+  `;
+}
+
+function renderTopbar() {
+  const topbar = document.getElementById('topbar');
+  const user = AppState.currentUser;
+
+  topbar.className = `fixed top-0 left-16 right-0 h-14 flex items-center justify-between px-6 z-20 theme-transition ${t('topbar')} max-md:left-0`;
+
+  if (!user || AppState.currentView === 'login') {
+    topbar.innerHTML = `
+      <div class="${t('heading')} font-bold text-lg">Accountability OS</div>
+      <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">
+        ${AppState.theme === 'dark' ? '🌙' : '☀️'}
+      </button>
+    `;
+    return;
+  }
+
+  const syncDot = {
+    synced: 'bg-green-500',
+    saving: 'bg-yellow-500 animate-pulse',
+    error: 'bg-red-500',
+    offline: 'bg-gray-500',
+    idle: 'bg-gray-400'
+  }[AppState.syncStatus] || 'bg-gray-400';
+
+  topbar.innerHTML = `
+    <div class="flex items-center gap-3">
+      <span class="text-xl">${user.avatar}</span>
+      <span class="${t('heading')} font-bold">${user.name}</span>
+      <span class="${t('accent')} ${t('mono')} text-sm font-bold">${user.stats?.totalPoints || 0} pts</span>
+      <span class="text-sm">🔥 ${user.stats?.streak || 0}</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5" title="Sync: ${AppState.syncStatus}">
+        <div class="w-2 h-2 rounded-full ${syncDot}"></div>
+        <span class="${t('muted')} text-xs">${AppState.storageMode === 'github' ? 'GitHub' : 'Local'}</span>
+      </div>
+      <button onclick="toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">
+        ${AppState.theme === 'dark' ? '🌙' : '☀️'}
+      </button>
+    </div>
+  `;
+}
+
+function toggleTheme() {
+  AppState.theme = AppState.theme === 'dark' ? 'cartoon' : 'dark';
+  localStorage.setItem('accountability_theme', AppState.theme);
+  render();
+}
+
+// ============================================================
+// Section 19: Login View
+// ============================================================
+
+function renderLogin() {
+  const users = getActiveUsers();
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="flex items-center justify-center min-h-[calc(100vh-7rem)]">
+      <div class="text-center animate-fade-in-up">
+        <h1 class="${t('heading')} text-3xl font-extrabold mb-2">Accountability OS</h1>
+        <p class="${t('muted')} mb-8">Select your profile to continue</p>
+
+        <div class="flex flex-wrap justify-center gap-4" id="user-select">
+          ${users.map(user => `
+            <button onclick="showPinInput('${user.id}')"
+              class="${t('card')} ${t('cardHover')} p-6 w-36 flex flex-col items-center gap-3 transition-all cursor-pointer">
+              <span class="text-5xl">${user.avatar}</span>
+              <span class="${t('heading')} font-bold">${user.name}</span>
+              <span class="${t('badge')} text-xs px-2 py-0.5">${user.role}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        <div id="pin-section" class="hidden mt-8 animate-fade-in-up">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <span id="pin-avatar" class="text-3xl"></span>
+            <span id="pin-name" class="${t('heading')} font-bold text-lg"></span>
+          </div>
+          <div class="flex justify-center gap-2 mb-4" id="pin-inputs">
+            <input type="password" maxlength="1" class="${t('input')} pin-input w-12 h-14 text-center text-xl font-bold" data-pin="0" oninput="pinAdvance(this, 0)" onkeydown="pinKeydown(event, 0)">
+            <input type="password" maxlength="1" class="${t('input')} pin-input w-12 h-14 text-center text-xl font-bold" data-pin="1" oninput="pinAdvance(this, 1)" onkeydown="pinKeydown(event, 1)">
+            <input type="password" maxlength="1" class="${t('input')} pin-input w-12 h-14 text-center text-xl font-bold" data-pin="2" oninput="pinAdvance(this, 2)" onkeydown="pinKeydown(event, 2)">
+            <input type="password" maxlength="1" class="${t('input')} pin-input w-12 h-14 text-center text-xl font-bold" data-pin="3" oninput="pinAdvance(this, 3)" onkeydown="pinKeydown(event, 3)">
+          </div>
+          <div id="pin-error" class="hidden ${t('danger')} text-sm mb-2">Wrong PIN. Try again.</div>
+          <button class="${t('buttonSecondary')} text-sm px-4 py-2" onclick="cancelPin()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+let pinUserId = null;
+
+function showPinInput(userId) {
+  pinUserId = userId;
+  const user = getUser(userId);
+  document.getElementById('user-select').classList.add('hidden');
+  document.getElementById('pin-section').classList.remove('hidden');
+  document.getElementById('pin-avatar').textContent = user.avatar;
+  document.getElementById('pin-name').textContent = user.name;
+  document.getElementById('pin-error').classList.add('hidden');
+
+  // Clear and focus first input
+  const inputs = document.querySelectorAll('[data-pin]');
+  inputs.forEach(i => i.value = '');
+  inputs[0]?.focus();
+}
+
+function cancelPin() {
+  pinUserId = null;
+  document.getElementById('user-select').classList.remove('hidden');
+  document.getElementById('pin-section').classList.add('hidden');
+}
+
+function pinAdvance(el, index) {
+  if (el.value.length === 1 && index < 3) {
+    document.querySelector(`[data-pin="${index + 1}"]`)?.focus();
+  }
+  // Check if all filled
+  const inputs = document.querySelectorAll('[data-pin]');
+  const pin = Array.from(inputs).map(i => i.value).join('');
+  if (pin.length === 4) {
+    validatePin(pin);
+  }
+}
+
+function pinKeydown(event, index) {
+  if (event.key === 'Backspace' && !event.target.value && index > 0) {
+    document.querySelector(`[data-pin="${index - 1}"]`)?.focus();
+  }
+}
+
+function validatePin(pin) {
+  const user = getUser(pinUserId);
+  if (!user) return;
+
+  if (user.pin === pin) {
+    AppState.currentUser = user;
+    navigate(user.role === 'admin' ? 'admin' : 'dashboard');
+  } else {
+    const pinSection = document.getElementById('pin-section');
+    document.getElementById('pin-error').classList.remove('hidden');
+    pinSection.classList.add('animate-shake');
+    setTimeout(() => pinSection.classList.remove('animate-shake'), 400);
+    const inputs = document.querySelectorAll('[data-pin]');
+    inputs.forEach(i => i.value = '');
+    inputs[0]?.focus();
+  }
+}
+
+// ============================================================
+// Section 20: Init
+// ============================================================
+
+async function init() {
+  await loadData();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

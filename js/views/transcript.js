@@ -1,5 +1,7 @@
 import { t } from '../themes.js';
 import { AppState } from '../state.js';
+import { config } from '../config.js';
+import { supabase } from '../supabase.js';
 import { toast, showModal, hideModal } from '../components.js';
 import { fetchRoom } from '../data/rooms.js';
 import { addGoal, addNotToDo } from '../data/goals.js';
@@ -22,10 +24,11 @@ export async function showTranscriptModal(roomId) {
     <div class="mb-4"><label class="text-sm font-bold block mb-2">Paste Transcript</label>
       <textarea id="transcript-input" class="${t('input')} w-full h-48 p-3 text-sm resize-none" placeholder="Paste your Granola transcript here..."></textarea>
     </div>
+    ${!config.CLAUDE_PROXY_URL ? `
     <div class="mb-4"><label class="text-sm font-bold block mb-2">Anthropic API Key</label>
       <input type="password" id="anthropic-key" class="${t('input')} w-full px-3 py-2 text-sm" placeholder="sk-ant-..." value="${localStorage.getItem('anthropic_key') || ''}">
       <p class="${t('muted')} text-xs mt-1">Stored locally in your browser only</p>
-    </div>
+    </div>` : `<div class="mb-4"><p class="${t('muted')} text-xs">AI analysis powered by server-side Claude</p></div>`}
     <div id="transcript-error" class="hidden ${t('dangerBg')} p-3 rounded-lg mb-4 text-sm"></div>
     <button id="analyse-btn" class="${t('button')} w-full py-3 text-sm" onclick="window.__analyseTranscript('${roomId}')">🔍 Analyse Transcript</button>
     <div id="transcript-loading" class="hidden text-center py-8">
@@ -37,9 +40,13 @@ export async function showTranscriptModal(roomId) {
 }
 
 window.__analyseTranscript = async (roomId) => {
-  const apiKey = document.getElementById('anthropic-key')?.value.trim();
-  if (!apiKey) { showError('Set your Anthropic API key.'); return; }
-  localStorage.setItem('anthropic_key', apiKey);
+  const useProxy = !!config.CLAUDE_PROXY_URL;
+
+  if (!useProxy) {
+    const apiKey = document.getElementById('anthropic-key')?.value.trim();
+    if (!apiKey) { showError('Set your Anthropic API key.'); return; }
+    localStorage.setItem('anthropic_key', apiKey);
+  }
 
   const transcript = document.getElementById('transcript-input')?.value.trim();
   if (!transcript) { showError('Paste a transcript first.'); return; }
@@ -57,12 +64,35 @@ window.__analyseTranscript = async (roomId) => {
 
   const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.\n\nParticipants: ${names}\n\nFor each participant, extract:\n1. priorityGoals: Top 1-3 goals (specific, actionable)\n2. secondaryGoals: Other goals mentioned\n3. notToDo: Commitments to STOP or AVOID\n4. deadlines: Dates per goal\n5. mood: low/medium/high\n\nReturn ONLY valid JSON:\n{"participants":{"NAME":{"priorityGoals":[{"text":"...","deadline":"YYYY-MM-DD or null"}],"secondaryGoals":[{"text":"...","deadline":null}],"notToDo":[{"text":"..."}],"mood":"low|medium|high"}},"sessionSummary":"2-3 sentence summary"}`;
 
+  const requestBody = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: systemPrompt + '\n\nTranscript:\n' + transcript }]
+  };
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: systemPrompt + '\n\nTranscript:\n' + transcript }] })
-    });
+    let res;
+    if (useProxy) {
+      // Use server-side proxy — send Supabase auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      res = await fetch(config.CLAUDE_PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+    } else {
+      // Direct browser call (fallback)
+      const apiKey = localStorage.getItem('anthropic_key');
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify(requestBody),
+      });
+    }
+
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `API error: ${res.status}`); }
     const data = await res.json();
     const text = data.content?.[0]?.text || '';

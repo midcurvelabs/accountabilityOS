@@ -5,6 +5,12 @@ import { AppState, setState } from './state.js';
 
 export function parseRoute(hash) {
   const parts = hash.split('/');
+
+  // Deep link: join/:code
+  if (parts[0] === 'join' && parts[1]) {
+    return { view: 'join', roomId: null, joinCode: parts[1] };
+  }
+
   if (parts[0] === 'room' && parts[1]) {
     return { view: parts[2] || 'room-dashboard', roomId: parts[1] };
   }

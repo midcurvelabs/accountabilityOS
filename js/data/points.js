@@ -1,3 +1,31 @@
+import { supabase } from '../supabase.js';
+
+// --------------------------------------------------------------------------
+// Server-side leaderboard (calls PostgreSQL function)
+// --------------------------------------------------------------------------
+export async function fetchLeaderboard(roomId, period = null) {
+  const { data, error } = await supabase.rpc('get_room_leaderboard', {
+    p_room_id: roomId,
+    p_period: period,
+  });
+  if (error) throw error;
+  // Sort by points descending
+  return (data || []).sort((a, b) => b.points - a.points);
+}
+
+export async function fetchUserStats(userId, roomId, period = null) {
+  const { data, error } = await supabase.rpc('calculate_user_points', {
+    p_user_id: userId,
+    p_room_id: roomId,
+    p_period: period,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// --------------------------------------------------------------------------
+// Client-side fallbacks (used when DB functions aren't deployed yet)
+// --------------------------------------------------------------------------
 const DEFAULT_CONFIG = {
   showUp: 10, completeGoal: 25, completeSecondary: 10,
   maintainNotToDo: 5, peerVoteGood: 15, peerVoteMeh: 7,

@@ -16,6 +16,7 @@ import { renderGoalPlanner } from './views/goal-planner.js';
 import { renderRoomLeaderboard } from './views/leaderboard.js';
 import { renderPotView } from './views/pot.js';
 import { renderRoomSettings, renderGlobalSettings } from './views/settings.js';
+import { renderJoinRoom } from './views/join.js';
 
 // ============================================================
 // Render dispatcher
@@ -53,6 +54,7 @@ function render() {
   switch (v) {
     case 'rooms': return renderRoomSelector();
     case 'global-settings': return renderGlobalSettings();
+    case 'join': return renderJoinRoom();
     default: return renderRoomSelector();
   }
 }
@@ -164,7 +166,15 @@ async function init() {
         .eq('id', session.user.id)
         .single();
       AppState.profile = profile;
-      navigate('rooms');
+
+      // Check for pending join code from deep link
+      const pendingCode = sessionStorage.getItem('pending_join_code');
+      if (pendingCode) {
+        sessionStorage.removeItem('pending_join_code');
+        navigate(`join/${pendingCode}`);
+      } else {
+        navigate('rooms');
+      }
     } else if (event === 'SIGNED_OUT') {
       AppState.user = null;
       AppState.profile = null;

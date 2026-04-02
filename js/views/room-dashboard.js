@@ -6,9 +6,16 @@ import { getCurrentPeriod } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
 import { fetchRoomGoals, addGoal, toggleGoal, fetchNotToDos, reportViolation } from '../data/goals.js';
 import { fetchDeepWork, logDeepWork } from '../data/deep-work.js';
+import { fetchActivityFeed, formatActivity } from '../data/activity.js';
+import { fetchUserStats } from '../data/points.js';
 import { subscribeToRoom } from '../realtime.js';
+import { debounce } from '../helpers.js';
+import { fireConfetti } from '../confetti.js';
 
 let roomCache = null;
+
+// Debounced re-render to batch rapid realtime events
+const debouncedRender = debounce(() => renderRoomDashboard(), 500);
 
 export async function renderRoomDashboard() {
   const roomId = AppState.currentRoom;
@@ -21,21 +28,22 @@ export async function renderRoomDashboard() {
   }
 
   try {
-    const [room, allGoals, notToDos, deepWork] = await Promise.all([
+    const period = getCurrentPeriod('weekly');
+
+    const [room, allGoals, notToDos, deepWork, activity] = await Promise.all([
       fetchRoom(roomId),
-      fetchRoomGoals(roomId),
-      fetchNotToDos(roomId),
-      fetchDeepWork(roomId, { since: getWeekStart() })
+      fetchRoomGoals(roomId, { period }),
+      fetchNotToDos(roomId, { period }),
+      fetchDeepWork(roomId, { since: getWeekStart() }),
+      fetchActivityFeed(roomId, 10).catch(() => []),
     ]);
     roomCache = room;
 
     const user = AppState.user;
-    const profile = AppState.profile;
     const members = room.members || [];
-    const period = getCurrentPeriod('weekly');
 
     const myGoals = allGoals.filter(g => g.user_id === user.id);
-    const myWeekGoals = myGoals.filter(g => g.timeframe === 'weekly' && g.period === period);
+    const myWeekGoals = myGoals.filter(g => g.timeframe === 'weekly');
     const completed = myWeekGoals.filter(g => g.completed).length;
     const total = myWeekGoals.length;
     const pct = total > 0 ? (completed / total) * 100 : 0;
@@ -70,9 +78,11 @@ export async function renderRoomDashboard() {
             </div>
 
             <h2 class="${t('heading')} font-bold flex items-center gap-2">🎯 This Week <span class="${t('badge')} text-xs px-2 py-0.5">${period}</span></h2>
+            <div id="goals-list">
             ${myWeekGoals.length === 0
               ? `<div class="${t('card')} p-6 text-center ${t('muted')}">No weekly goals yet. Add one above or paste a transcript!</div>`
               : myWeekGoals.map(g => goalCard(g, room.id)).join('')}
+            </div>
 
             ${myNotToDos.length > 0 ? `
               <h2 class="${t('heading')} font-bold mt-4">🚫 NOT-to-do</h2>
@@ -83,7 +93,7 @@ export async function renderRoomDashboard() {
                     <span class="text-sm">${n.text}</span>
                     ${(n.violations || []).length > 0 ? `<span class="${t('dangerBg')} text-xs px-2 py-0.5 rounded-full">${n.violations.length} violations</span>` : ''}
                   </div>
-                  <button class="${t('buttonDanger')} text-xs px-2 py-1" onclick="window.__selfReport('${n.id}')">I broke this 😬</button>
+                  <button class="${t('buttonDanger')} text-xs px-2 py-1" onclick="window.__selfReport('${n.id}')">I broke this</button>
                 </div>
               `).join('')}
             ` : ''}
@@ -102,9 +112,24 @@ export async function renderRoomDashboard() {
 
             <button class="${t('buttonSecondary')} w-full py-2 text-sm" onclick="window.__showDeepWork('${room.id}')">⏱️ Log Deep Work</button>
 
+            <!-- Activity Feed -->
+            <div class="${t('card')} p-4" id="activity-feed">
+              <h3 class="${t('heading')} font-bold text-sm mb-3">Activity</h3>
+              ${activity.length === 0
+                ? `<div class="${t('muted')} text-xs text-center py-2">No activity yet</div>`
+                : activity.map(a => {
+                    const f = formatActivity(a);
+                    return `<div class="flex items-start gap-2 py-1.5 text-xs ${t('muted')} border-b last:border-0 ${t('divider')}">
+                      <span class="shrink-0">${f.avatar}</span>
+                      <span class="flex-1"><strong>${f.name}</strong> ${f.text}</span>
+                      <span class="shrink-0 ${t('mono')}">${f.ago}</span>
+                    </div>`;
+                  }).join('')}
+            </div>
+
             <h3 class="${t('heading')} font-bold text-sm">Room Members</h3>
             ${members.map(m => {
-              const mGoals = allGoals.filter(g => g.user_id === m.id && g.timeframe === 'weekly' && g.period === period && (g.visibility === 'public' || g.user_id === user.id));
+              const mGoals = allGoals.filter(g => g.user_id === m.id && g.timeframe === 'weekly' && (g.visibility === 'public' || g.user_id === user.id));
               const mCompleted = mGoals.filter(g => g.completed).length;
               const mTotal = mGoals.length;
               const mPct = mTotal > 0 ? (mCompleted / mTotal) * 100 : 0;
@@ -138,13 +163,27 @@ export async function renderRoomDashboard() {
         </div>
       </div>`;
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates — debounced to avoid flicker
     subscribeToRoom(roomId, {
-      onGoalChange: () => renderRoomDashboard(),
-      onMemberChange: () => renderRoomDashboard(),
-      onDeepWorkChange: () => renderRoomDashboard(),
-      onNotToDoChange: () => renderRoomDashboard(),
-      onViolation: () => renderRoomDashboard(),
+      onGoalChange: () => debouncedRender(),
+      onMemberChange: () => debouncedRender(),
+      onDeepWorkChange: () => debouncedRender(),
+      onNotToDoChange: () => debouncedRender(),
+      onViolation: () => debouncedRender(),
+      onActivity: (payload) => {
+        // Prepend to activity feed without full re-render
+        const feed = document.getElementById('activity-feed');
+        if (feed && payload.new) {
+          const f = formatActivity({ ...payload.new, profiles: null });
+          const item = document.createElement('div');
+          item.className = `flex items-start gap-2 py-1.5 text-xs ${t('muted')} border-b ${t('divider')} animate-fade-in-up`;
+          item.innerHTML = `<span class="shrink-0">${f.avatar}</span><span class="flex-1"><strong>${f.name}</strong> ${f.text}</span><span class="shrink-0 ${t('mono')}">${f.ago}</span>`;
+          // Insert after the h3 heading
+          const heading = feed.querySelector('h3');
+          if (heading?.nextSibling) heading.after(item);
+          else feed.appendChild(item);
+        }
+      },
     });
 
   } catch (err) {
@@ -173,6 +212,8 @@ window.__quickAdd = async (roomId) => {
 window.__toggleGoal = async (goalId, completed) => {
   try {
     await toggleGoal(goalId, completed);
+    // Fire confetti when completing a goal
+    if (completed) fireConfetti();
     await renderRoomDashboard();
   } catch (err) { toast(err.message, 'error'); }
 };

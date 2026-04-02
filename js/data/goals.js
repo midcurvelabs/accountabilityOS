@@ -2,14 +2,18 @@ import { supabase } from '../supabase.js';
 import { AppState } from '../state.js';
 
 export async function fetchRoomGoals(roomId, opts = {}) {
-  let query = supabase.from('goals').select('*').eq('room_id', roomId);
+  const limit = opts.limit || 100;
+  const offset = opts.offset || 0;
+  let query = supabase.from('goals').select('*', { count: 'exact' }).eq('room_id', roomId);
   if (opts.userId) query = query.eq('user_id', opts.userId);
   if (opts.timeframe) query = query.eq('timeframe', opts.timeframe);
   if (opts.period) query = query.eq('period', opts.period);
   if (opts.type) query = query.eq('type', opts.type);
-  query = query.order('created_at', { ascending: true });
-  const { data, error } = await query;
+  query = query.order('created_at', { ascending: true }).range(offset, offset + limit - 1);
+  const { data, error, count } = await query;
   if (error) throw error;
+  // Attach pagination metadata
+  data._pagination = { total: count, limit, offset, hasMore: offset + limit < count };
   return data;
 }
 
@@ -47,11 +51,15 @@ export async function deleteGoal(goalId) {
 }
 
 export async function fetchNotToDos(roomId, opts = {}) {
-  let query = supabase.from('not_to_dos').select('*, violations(*)').eq('room_id', roomId);
+  const limit = opts.limit || 50;
+  const offset = opts.offset || 0;
+  let query = supabase.from('not_to_dos').select('*, violations(*)', { count: 'exact' }).eq('room_id', roomId);
   if (opts.userId) query = query.eq('user_id', opts.userId);
   if (opts.period) query = query.eq('period', opts.period);
-  const { data, error } = await query;
+  query = query.range(offset, offset + limit - 1);
+  const { data, error, count } = await query;
   if (error) throw error;
+  data._pagination = { total: count, limit, offset, hasMore: offset + limit < count };
   return data;
 }
 

@@ -1,13 +1,17 @@
 import { supabase } from '../supabase.js';
 import { AppState } from '../state.js';
 
-export async function fetchRoomSessions(roomId) {
-  const { data, error } = await supabase
+export async function fetchRoomSessions(roomId, opts = {}) {
+  const limit = opts.limit || 20;
+  const offset = opts.offset || 0;
+  const { data, error, count } = await supabase
     .from('sessions')
-    .select('*, session_participants(user_id, mood, profiles(name, avatar))')
+    .select('*, session_participants(user_id, mood, profiles(name, avatar))', { count: 'exact' })
     .eq('room_id', roomId)
-    .order('date', { ascending: false });
+    .order('date', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) throw error;
+  data._pagination = { total: count, limit, offset, hasMore: offset + limit < count };
   return data;
 }
 

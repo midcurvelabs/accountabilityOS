@@ -1,12 +1,15 @@
 import { supabase } from '../supabase.js';
 import { AppState } from '../state.js';
 
-export async function fetchPotLedger(roomId, period) {
-  let query = supabase.from('pot_ledger').select('*, profiles(name, avatar)').eq('room_id', roomId);
+export async function fetchPotLedger(roomId, period, opts = {}) {
+  const limit = opts.limit || 50;
+  const offset = opts.offset || 0;
+  let query = supabase.from('pot_ledger').select('*, profiles(name, avatar)', { count: 'exact' }).eq('room_id', roomId);
   if (period) query = query.eq('period', period);
-  query = query.order('created_at', { ascending: true });
-  const { data, error } = await query;
+  query = query.order('created_at', { ascending: true }).range(offset, offset + limit - 1);
+  const { data, error, count } = await query;
   if (error) throw error;
+  data._pagination = { total: count, limit, offset, hasMore: offset + limit < count };
   return data;
 }
 

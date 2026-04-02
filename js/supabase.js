@@ -2,11 +2,9 @@
 // Supabase Client & Auth Helpers
 // ============================================================
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { config } from './config.js';
 
-const SUPABASE_URL = 'https://kbdiwazkyxvizjxqiggc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZGl3YXpreXh2aXpqeHFpZ2djIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzc5NDUsImV4cCI6MjA5MDcxMzk0NX0.vUCZiDduNQFoGVfuixhHjYn80N0yyKYKUS-PKIlXwFA';
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
 
 export async function signIn(email) {
   const { data, error } = await supabase.auth.signInWithOtp({

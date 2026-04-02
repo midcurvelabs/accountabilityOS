@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "accountability-os",
-      "runtimeExecutable": "/usr/bin/ruby",
-      "runtimeArgs": ["-run", "-e", "httpd", "/Users/rik/Documents/rik-docs/02_projects/Accountability", "-p", "8765"],
+      "runtimeExecutable": "/usr/local/bin/python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "-d", "/Users/rik/Documents/rik-docs/02_projects/Accountability"],
       "port": 8765
     }
   ]

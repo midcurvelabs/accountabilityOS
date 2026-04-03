@@ -2,7 +2,7 @@ import { t } from '../themes.js';
 import { AppState } from '../state.js';
 import { navigate } from '../router.js';
 import { toast, progressRing, goalCard, showModal, hideModal } from '../components.js';
-import { getCurrentPeriod } from '../helpers.js';
+import { getCurrentPeriod, safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
 import { fetchRoomGoals, addGoal, toggleGoal, fetchNotToDos, reportViolation } from '../data/goals.js';
 import { fetchDeepWork, logDeepWork } from '../data/deep-work.js';
@@ -120,7 +120,7 @@ export async function renderRoomDashboard() {
                 : activity.map(a => {
                     const f = formatActivity(a);
                     return `<div class="flex items-start gap-2 py-1.5 text-xs ${t('muted')} border-b last:border-0 ${t('divider')}">
-                      <span class="shrink-0">${f.avatar}</span>
+                      <span class="shrink-0">${safeAvatar(f.avatar)}</span>
                       <span class="flex-1"><strong>${f.name}</strong> ${f.text}</span>
                       <span class="shrink-0 ${t('mono')}">${f.ago}</span>
                     </div>`;
@@ -135,7 +135,7 @@ export async function renderRoomDashboard() {
               const mPct = mTotal > 0 ? (mCompleted / mTotal) * 100 : 0;
               return `
                 <div class="${t('card')} p-3 flex items-center gap-3">
-                  <span class="text-2xl">${m.avatar}</span>
+                  <span class="text-2xl">${safeAvatar(m.avatar)}</span>
                   <div class="flex-1 min-w-0">
                     <div class="font-semibold text-sm">${m.name} ${m.id === user.id ? '(you)' : ''}</div>
                     <div class="${t('muted')} text-xs ${t('mono')}">${mCompleted}/${mTotal} goals</div>
@@ -177,7 +177,7 @@ export async function renderRoomDashboard() {
           const f = formatActivity({ ...payload.new, profiles: null });
           const item = document.createElement('div');
           item.className = `flex items-start gap-2 py-1.5 text-xs ${t('muted')} border-b ${t('divider')} animate-fade-in-up`;
-          item.innerHTML = `<span class="shrink-0">${f.avatar}</span><span class="flex-1"><strong>${f.name}</strong> ${f.text}</span><span class="shrink-0 ${t('mono')}">${f.ago}</span>`;
+          item.innerHTML = `<span class="shrink-0">${safeAvatar(f.avatar)}</span><span class="flex-1"><strong>${f.name}</strong> ${f.text}</span><span class="shrink-0 ${t('mono')}">${f.ago}</span>`;
           // Insert after the h3 heading
           const heading = feed.querySelector('h3');
           if (heading?.nextSibling) heading.after(item);

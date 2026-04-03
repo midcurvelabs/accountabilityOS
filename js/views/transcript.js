@@ -3,6 +3,7 @@ import { AppState } from '../state.js';
 import { config } from '../config.js';
 import { supabase } from '../supabase.js';
 import { toast, showModal, hideModal } from '../components.js';
+import { safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
 import { addGoal, addNotToDo } from '../data/goals.js';
 import { createSession } from '../data/sessions.js';
@@ -18,7 +19,7 @@ export async function showTranscriptModal(roomId) {
       <div class="flex flex-wrap gap-2">${members.map(u => `
         <label class="${t('card')} px-3 py-2 cursor-pointer flex items-center gap-2 text-sm ${t('cardHover')}">
           <input type="checkbox" class="transcript-participant" value="${u.id}" data-name="${u.name}" checked>
-          <span>${u.avatar} ${u.name}</span>
+          <span>${safeAvatar(u.avatar)} ${u.name}</span>
         </label>`).join('')}</div>
     </div>
     <div class="mb-4"><label class="text-sm font-bold block mb-2">Paste Transcript</label>

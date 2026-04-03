@@ -6,6 +6,7 @@ import { AppState, setState, setRenderer } from './state.js';
 import { t, applyTheme, toggleTheme } from './themes.js';
 import { initRouter, navigate } from './router.js';
 import { hideModal } from './components.js';
+import { safeAvatar } from './helpers.js';
 import { unsubscribeAll } from './realtime.js';
 
 // Views
@@ -17,7 +18,7 @@ import { renderRoomLeaderboard } from './views/leaderboard.js';
 import { renderPotView } from './views/pot.js';
 import { renderRoomSettings, renderGlobalSettings } from './views/settings.js';
 import { renderJoinRoom } from './views/join.js';
-import { renderOnboarding } from './views/onboarding.js';
+import { showOnboardingOverlay, shouldShowOnboarding } from './views/onboarding.js';
 
 // ============================================================
 // Render dispatcher
@@ -40,12 +41,6 @@ function render() {
     // Auto-generated name from trigger, let user customize
   }
 
-  // Onboarding for first-time users
-  if (v === 'onboarding') return renderOnboarding();
-  if (!localStorage.getItem('accountability_onboarded') && v !== 'join') {
-    return renderOnboarding();
-  }
-
   // Room views
   if (AppState.currentRoom) {
     switch (v) {
@@ -59,10 +54,16 @@ function render() {
 
   // Global views
   switch (v) {
-    case 'rooms': return renderRoomSelector();
+    case 'rooms':
+      renderRoomSelector();
+      if (shouldShowOnboarding()) setTimeout(showOnboardingOverlay, 300);
+      return;
     case 'global-settings': return renderGlobalSettings();
     case 'join': return renderJoinRoom();
-    default: return renderRoomSelector();
+    default:
+      renderRoomSelector();
+      if (shouldShowOnboarding()) setTimeout(showOnboardingOverlay, 300);
+      return;
   }
 }
 
@@ -120,7 +121,7 @@ function renderTopbar() {
   const profile = AppState.profile;
   topbar.innerHTML = `
     <div class="flex items-center gap-3">
-      <span class="text-lg">${profile?.avatar || '👤'}</span>
+      <span class="text-lg">${safeAvatar(profile?.avatar)}</span>
       <span class="${t('heading')} font-bold text-sm">${profile?.name || ''}</span>
     </div>
     <div class="flex items-center gap-3">

@@ -2,6 +2,7 @@ import { t } from '../themes.js';
 import { AppState } from '../state.js';
 import { navigate } from '../router.js';
 import { toast } from '../components.js';
+import { safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
 import { fetchPotLedger, deposit } from '../data/pot.js';
 import { getCurrentPeriod } from '../helpers.js';
@@ -47,7 +48,7 @@ export async function renderPotView() {
             return `
               <div class="${t('card')} p-3 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <span class="text-xl">${m.avatar}</span>
+                  <span class="text-xl">${safeAvatar(m.avatar)}</span>
                   <span class="font-semibold text-sm">${m.name}</span>
                 </div>
                 <span class="${dep ? t('accent') : t('danger')} text-sm font-bold">${dep ? '✅ $' + parseFloat(dep.amount).toFixed(2) : '❌ Not deposited'}</span>

@@ -31,3 +31,14 @@ export function formatDate(date) {
   const d = new Date(date);
   return d.toISOString().split('T')[0];
 }
+
+const VALID_AVATARS = new Set(['🔥', '⚡', '🎯', '🚀', '💎', '🦊', '🐺', '🦁', '🎸', '🎮', '🏔️', '🌊', '⭐', '🍕', '🧠', '💪', '👤']);
+
+export function safeAvatar(avatar) {
+  if (!avatar) return '👤';
+  // Check against known-good set first
+  if (VALID_AVATARS.has(avatar)) return avatar;
+  // Allow any single emoji (catches new valid emojis) — must be 1-2 codepoints, no latin chars
+  if (avatar.length <= 4 && !/[a-zA-Z0-9]/.test(avatar)) return avatar;
+  return '👤';
+}

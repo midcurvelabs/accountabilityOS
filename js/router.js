@@ -11,10 +11,6 @@ export function parseRoute(hash) {
     return { view: 'join', roomId: null, joinCode: parts[1] };
   }
 
-  if (parts[0] === 'onboarding') {
-    return { view: 'onboarding', roomId: null };
-  }
-
   if (parts[0] === 'room' && parts[1]) {
     return { view: parts[2] || 'room-dashboard', roomId: parts[1] };
   }

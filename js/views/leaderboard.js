@@ -2,6 +2,7 @@ import { t } from '../themes.js';
 import { AppState } from '../state.js';
 import { navigate } from '../router.js';
 import { progressRing } from '../components.js';
+import { safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
 import { fetchLeaderboard } from '../data/points.js';
 import { getCurrentPeriod } from '../helpers.js';
@@ -70,7 +71,7 @@ export async function renderRoomLeaderboard() {
             return `
               <div class="${t('card')} p-4 flex items-center gap-4 animate-fade-in-up ${isFirst ? t('accentBorder') + ' border-2' : ''}" style="animation-delay:${i * 0.1}s">
                 <div class="${t('mono')} text-2xl font-bold w-10 text-center ${isFirst ? t('accent') : t('muted')}">${isFirst ? '👑' : `#${i + 1}`}</div>
-                <span class="text-3xl">${m.avatar || '👤'}</span>
+                <span class="text-3xl">${safeAvatar(m.avatar)}</span>
                 <div class="flex-1">
                   <div class="${t('heading')} font-bold">${m.name || 'Unknown'}</div>
                   <div class="flex items-center gap-2 text-xs ${t('muted')} ${t('mono')} flex-wrap">

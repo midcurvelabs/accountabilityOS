@@ -2,6 +2,7 @@ import { t } from '../themes.js';
 import { AppState } from '../state.js';
 import { navigate } from '../router.js';
 import { toast } from '../components.js';
+import { safeAvatar } from '../helpers.js';
 import { fetchRoom, updateRoomSettings, removeMember, leaveRoom } from '../data/rooms.js';
 import { supabase } from '../supabase.js';
 
@@ -79,7 +80,7 @@ export async function renderRoomSettings() {
             ${(room.members || []).map(m => `
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <span class="text-xl">${m.avatar}</span>
+                  <span class="text-xl">${safeAvatar(m.avatar)}</span>
                   <span class="text-sm font-semibold">${m.name}</span>
                   ${m.id === room.created_by ? `<span class="${t('badge')} text-xs px-2 py-0.5">Creator</span>` : ''}
                 </div>
@@ -143,7 +144,7 @@ export function renderGlobalSettings() {
       <div class="${t('card')} p-5 mb-6">
         <h2 class="${t('heading')} font-bold mb-4">Profile</h2>
         <div class="flex items-center gap-4 mb-4">
-          <span class="text-4xl">${AppState.profile?.avatar || '👤'}</span>
+          <span class="text-4xl">${safeAvatar(AppState.profile?.avatar)}</span>
           <div>
             <div class="font-bold">${AppState.profile?.name || 'Unknown'}</div>
             <div class="${t('muted')} text-sm">${AppState.user?.email || ''}</div>

@@ -17,6 +17,7 @@ import { renderRoomLeaderboard } from './views/leaderboard.js';
 import { renderPotView } from './views/pot.js';
 import { renderRoomSettings, renderGlobalSettings } from './views/settings.js';
 import { renderJoinRoom } from './views/join.js';
+import { renderOnboarding } from './views/onboarding.js';
 
 // ============================================================
 // Render dispatcher
@@ -37,6 +38,12 @@ function render() {
   // Need profile setup
   if (!AppState.profile?.name || AppState.profile.name === AppState.user.email?.split('@')[0]) {
     // Auto-generated name from trigger, let user customize
+  }
+
+  // Onboarding for first-time users
+  if (v === 'onboarding') return renderOnboarding();
+  if (!localStorage.getItem('accountability_onboarded') && v !== 'join') {
+    return renderOnboarding();
   }
 
   // Room views

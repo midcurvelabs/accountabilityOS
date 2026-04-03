@@ -28,15 +28,9 @@ export async function fetchRoom(roomId) {
 }
 
 export async function createRoom(name) {
-  const { data: room, error } = await supabase
-    .from('rooms')
-    .insert({ name, created_by: AppState.user.id })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('create_room_with_membership', { room_name: name });
   if (error) throw error;
-
-  await supabase.from('room_members').insert({ room_id: room.id, user_id: AppState.user.id });
-  return room;
+  return data;
 }
 
 export async function joinRoomByCode(code) {

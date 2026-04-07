@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js';
-import { AppState } from '../state.js';
 
 export async function fetchRoomSessions(roomId, opts = {}) {
   const limit = opts.limit || 20;
@@ -16,25 +15,25 @@ export async function fetchRoomSessions(roomId, opts = {}) {
 }
 
 export async function createSession({ roomId, transcript, summary, participants }) {
-  const { data: session, error } = await supabase
-    .from('sessions')
-    .insert({
-      room_id: roomId,
-      transcript: transcript?.substring(0, 10000),
-      session_summary: summary,
-      created_by: AppState.user.id
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('create_session_with_participants', {
+    p_room_id: roomId,
+    p_transcript: transcript?.substring(0, 10000) || null,
+    p_summary: summary || null,
+    p_participants: participants || []
+  });
   if (error) throw error;
+  return data;
+}
 
-  if (participants?.length) {
-    const rows = participants.map(p => ({
-      session_id: session.id,
-      user_id: p.userId,
-      mood: p.mood || 'medium'
-    }));
-    await supabase.from('session_participants').insert(rows);
-  }
-  return session;
+export async function createSessionWithGoals({ roomId, transcript, summary, participants, goals, notToDos }) {
+  const { data, error } = await supabase.rpc('create_session_with_goals', {
+    p_room_id: roomId,
+    p_transcript: transcript?.substring(0, 10000) || null,
+    p_summary: summary || null,
+    p_participants: participants || [],
+    p_goals: goals || [],
+    p_not_to_dos: notToDos || []
+  });
+  if (error) throw error;
+  return data;
 }

@@ -19,6 +19,7 @@ import { renderPotView } from './views/pot.js';
 import { renderRoomSettings, renderGlobalSettings } from './views/settings.js';
 import { renderJoinRoom } from './views/join.js';
 import { showOnboardingOverlay, shouldShowOnboarding } from './views/onboarding.js';
+import './views/transcript.js';
 
 // ============================================================
 // Render dispatcher

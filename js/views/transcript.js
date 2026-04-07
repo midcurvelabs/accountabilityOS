@@ -1,12 +1,10 @@
 import { t } from '../themes.js';
-import { AppState } from '../state.js';
 import { config } from '../config.js';
 import { supabase } from '../supabase.js';
 import { toast, showModal, hideModal } from '../components.js';
 import { safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
-import { addGoal, addNotToDo } from '../data/goals.js';
-import { createSession } from '../data/sessions.js';
+import { createSessionWithGoals } from '../data/sessions.js';
 import { getCurrentPeriod } from '../helpers.js';
 
 export async function showTranscriptModal(roomId) {
@@ -55,15 +53,18 @@ window.__analyseTranscript = async (roomId) => {
   const participants = Array.from(document.querySelectorAll('.transcript-participant:checked'));
   if (participants.length === 0) { showError('Select at least one participant.'); return; }
 
-  const participantMap = {};
-  participants.forEach(el => { participantMap[el.dataset.name] = el.value; });
-  const names = Object.keys(participantMap).join(', ');
+  // Map userId → display name (Claude keys results by userId)
+  const idToNameMap = {};
+  participants.forEach(el => { idToNameMap[el.value] = el.dataset.name; });
+
+  // Build participant list for the prompt: "uuid (Name), uuid (Name)"
+  const participantList = participants.map(el => `"${el.value}" (${el.dataset.name})`).join('\n- ');
 
   document.getElementById('analyse-btn').classList.add('hidden');
   document.getElementById('transcript-loading').classList.remove('hidden');
   document.getElementById('transcript-error').classList.add('hidden');
 
-  const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.\n\nParticipants: ${names}\n\nFor each participant, extract:\n1. priorityGoals: Top 1-3 goals (specific, actionable)\n2. secondaryGoals: Other goals mentioned\n3. notToDo: Commitments to STOP or AVOID\n4. deadlines: Dates per goal\n5. mood: low/medium/high\n\nReturn ONLY valid JSON:\n{"participants":{"NAME":{"priorityGoals":[{"text":"...","deadline":"YYYY-MM-DD or null"}],"secondaryGoals":[{"text":"...","deadline":null}],"notToDo":[{"text":"..."}],"mood":"low|medium|high"}},"sessionSummary":"2-3 sentence summary"}`;
+  const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.\n\nParticipants (use the exact ID string as the JSON key for each participant):\n- ${participantList}\n\nFor each participant, extract:\n1. priorityGoals: Top 1-3 goals (specific, actionable)\n2. secondaryGoals: Other goals mentioned\n3. notToDo: Commitments to STOP or AVOID\n4. deadlines: Dates per goal\n5. mood: low/medium/high\n\nReturn ONLY valid JSON. Use the participant ID (the UUID string) as the key, NOT the name:\n{"participants":{"<participant-id>":{"name":"Display Name","priorityGoals":[{"text":"...","deadline":"YYYY-MM-DD or null"}],"secondaryGoals":[{"text":"...","deadline":null}],"notToDo":[{"text":"..."}],"mood":"low|medium|high"}},"sessionSummary":"2-3 sentence summary"}`;
 
   const requestBody = {
     model: 'claude-sonnet-4-20250514',
@@ -99,7 +100,7 @@ window.__analyseTranscript = async (roomId) => {
     const text = data.content?.[0]?.text || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Could not parse JSON from response');
-    showPreview(JSON.parse(jsonMatch[0]), participantMap, transcript, roomId);
+    showPreview(JSON.parse(jsonMatch[0]), idToNameMap, transcript, roomId);
   } catch (err) {
     document.getElementById('transcript-loading').classList.add('hidden');
     document.getElementById('analyse-btn').classList.remove('hidden');
@@ -112,7 +113,7 @@ function showError(msg) {
   if (el) { el.textContent = msg; el.classList.remove('hidden'); }
 }
 
-function showPreview(analysis, participantMap, transcript, roomId) {
+function showPreview(analysis, idToNameMap, transcript, roomId) {
   document.getElementById('transcript-loading').classList.add('hidden');
   const results = document.getElementById('transcript-results');
   results.classList.remove('hidden');
@@ -120,11 +121,16 @@ function showPreview(analysis, participantMap, transcript, roomId) {
   let html = `<h3 class="${t('heading')} font-bold mb-3">Preview Results</h3>`;
   if (analysis.sessionSummary) html += `<div class="${t('card')} p-3 mb-4 text-sm ${t('muted')}">${analysis.sessionSummary}</div>`;
 
-  for (const [name, data] of Object.entries(analysis.participants || {})) {
-    const userId = participantMap[name];
+  for (const [userId, data] of Object.entries(analysis.participants || {})) {
+    const name = idToNameMap[userId] || data.name || 'Unknown';
+    const matched = !!idToNameMap[userId];
     const moodEmoji = { low: '😔', medium: '😐', high: '🔥' };
-    html += `<div class="${t('card')} p-4 mb-3">
-      <div class="flex items-center gap-2 mb-3"><span class="${t('heading')} font-bold">${name}</span><span class="${t('badge')} text-xs px-2 py-0.5">${moodEmoji[data.mood] || '😐'} ${data.mood || 'medium'}</span></div>
+    html += `<div class="${t('card')} p-4 mb-3${!matched ? ' opacity-50' : ''}">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="${t('heading')} font-bold">${name}</span>
+        <span class="${t('badge')} text-xs px-2 py-0.5">${moodEmoji[data.mood] || '😐'} ${data.mood || 'medium'}</span>
+        ${!matched ? `<span class="text-xs text-yellow-500">⚠ unmatched</span>` : ''}
+      </div>
       <div class="space-y-1">
         ${(data.priorityGoals || []).map(g => `<div class="text-sm">🎯 ${g.text}</div>`).join('')}
         ${(data.secondaryGoals || []).map(g => `<div class="text-sm text-gray-400">📝 ${g.text}</div>`).join('')}
@@ -134,46 +140,49 @@ function showPreview(analysis, participantMap, transcript, roomId) {
   }
 
   // Store analysis data for save
-  window.__pendingAnalysis = { analysis, participantMap, transcript, roomId };
+  window.__pendingAnalysis = { analysis, idToNameMap, transcript, roomId };
   html += `<button class="${t('button')} w-full py-3 text-sm mt-4" onclick="window.__saveSession()">✅ Confirm & Save Session</button>`;
   results.innerHTML = html;
 }
 
 window.__saveSession = async () => {
-  const { analysis, participantMap, transcript, roomId } = window.__pendingAnalysis || {};
+  const { analysis, idToNameMap, transcript, roomId } = window.__pendingAnalysis || {};
   if (!analysis) return;
   const period = getCurrentPeriod('weekly');
 
   try {
     const sessionParticipants = [];
-    for (const [name, data] of Object.entries(analysis.participants || {})) {
-      const userId = participantMap[name];
-      if (!userId) continue;
+    const goals = [];
+    const notToDos = [];
+
+    for (const [userId, data] of Object.entries(analysis.participants || {})) {
+      if (!idToNameMap[userId]) continue; // skip unmatched participants
       sessionParticipants.push({ userId, mood: data.mood || 'medium' });
 
       for (const g of (data.priorityGoals || [])) {
-        await addGoal({ roomId, text: g.text, type: 'priority', timeframe: 'weekly', period, deadline: g.deadline || null });
+        goals.push({ userId, text: g.text, type: 'priority', timeframe: 'weekly', period, deadline: g.deadline || null });
       }
       for (const g of (data.secondaryGoals || [])) {
-        await addGoal({ roomId, text: g.text, type: 'secondary', timeframe: 'weekly', period });
+        goals.push({ userId, text: g.text, type: 'secondary', timeframe: 'weekly', period, deadline: null });
       }
       for (const g of (data.notToDo || [])) {
-        await addNotToDo({ roomId, text: g.text, period });
+        notToDos.push({ userId, text: g.text, period });
       }
     }
 
-    await createSession({
+    await createSessionWithGoals({
       roomId,
       transcript: transcript?.substring(0, 10000),
       summary: analysis.sessionSummary,
-      participants: sessionParticipants
+      participants: sessionParticipants,
+      goals,
+      notToDos
     });
 
     hideModal();
-    toast('Session saved! Goals and NOT-to-dos added.');
+    toast('Session saved! Goals added for all participants.');
     window.__pendingAnalysis = null;
 
-    // Trigger re-render of dashboard
     const { renderRoomDashboard } = await import('./room-dashboard.js');
     await renderRoomDashboard();
   } catch (err) { toast(err.message, 'error'); }

@@ -57,7 +57,10 @@ export async function renderRoomDashboard() {
       <div class="max-w-5xl mx-auto animate-fade-in-up">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h1 class="${t('heading')} text-2xl font-bold">${room.name}</h1>
+            <h1 class="${t('heading')} text-2xl font-bold flex items-center gap-2">
+              <button onclick="window.__nav('rooms')" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg" title="Back to Rooms">←</button>
+              ${room.name}
+            </h1>
             <div class="${t('muted')} text-sm flex items-center gap-3">
               <span>${members.length} members</span>
               <span class="cursor-pointer ${t('mono')} text-xs" onclick="window.__copyCode('${room.invite_code}')" title="Click to copy">🔑 ${room.invite_code}</span>

@@ -20,6 +20,9 @@ export function parseRoute(hash) {
 export function navigate(path) {
   location.hash = path;
   const route = parseRoute(path);
+  if (route.view === 'rooms' && AppState.currentRoom) {
+    AppState._cameFromRoom = true;
+  }
   AppState.currentView = route.view;
   if (route.roomId) AppState.currentRoom = route.roomId;
   else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) AppState.currentRoom = null;
@@ -30,6 +33,9 @@ export function initRouter() {
   window.addEventListener('hashchange', () => {
     const hash = location.hash.slice(1) || 'login';
     const route = parseRoute(hash);
+    if (route.view === 'rooms' && AppState.currentRoom) {
+      AppState._cameFromRoom = true;
+    }
     AppState.currentView = route.view;
     if (route.roomId) AppState.currentRoom = route.roomId;
     else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) AppState.currentRoom = null;

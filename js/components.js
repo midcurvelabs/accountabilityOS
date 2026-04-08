@@ -39,6 +39,40 @@ export function goalCard(goal, opts = {}) {
   const borderClass = isOverdue ? t('dangerBorder') + ' border-l-4' : '';
   const visIcon = goal.visibility === 'anonymous' ? '&#x1f441;&#xfe0f;&#x200d;&#x1f5e8;&#xfe0f;' : '';
   const tfBadge = { weekly: 'W', monthly: 'M', quarterly: 'Q' }[goal.timeframe] || '';
+  const isCounter = goal.target_count != null;
+
+  // Counter goal: tappable button + progress bar
+  if (isCounter) {
+    const pct = goal.target_count > 0 ? Math.round((goal.current_count / goal.target_count) * 100) : 0;
+    const colors = t('ring');
+    return `
+    <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
+      <div class="flex items-center gap-1 shrink-0">
+        ${goal.current_count > 0 ? `<button onclick="window.__decrementGoal('${goal.id}')"
+          class="w-6 h-8 rounded-l-lg border-2 ${t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
+          title="-1">−</button>` : ''}
+        <button onclick="window.__incrementGoal('${goal.id}')"
+          class="w-14 h-8 ${goal.current_count > 0 ? '' : 'rounded-lg'} ${goal.current_count > 0 ? 'rounded-r-lg' : ''} border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
+          title="+1">
+          ${goal.current_count}/${goal.target_count}
+        </button>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">
+          ${goal.text} ${visIcon}
+        </div>
+        <div class="w-full h-1.5 rounded-full mt-2 overflow-hidden" style="background:${colors.track}">
+          <div class="h-full rounded-full transition-all duration-300" style="width:${pct}%; background:${colors.fill}"></div>
+        </div>
+        <div class="flex items-center gap-1 mt-1 flex-wrap">
+          <span class="${t('badge')} text-xs px-1.5 py-0.5">${tfBadge}</span>
+          ${goal.deadline ? `<span class="${isOverdue ? t('dangerBg') : t('warningBg')} text-xs px-2 py-0.5 rounded-full ${t('mono')}">${isOverdue ? '&#9888; ' : '&#x1f4c5; '}${goal.deadline}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Boolean goal: existing checkbox behavior
   return `
     <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
       <label class="flex items-center cursor-pointer mt-0.5">

@@ -57,6 +57,7 @@ window.__showAddGoal = async (roomId) => {
         <div><label class="text-sm font-medium block mb-1">Timeframe</label><select id="goal-timeframe" class="${t('input')} w-full px-3 py-2 text-sm"><option value="weekly">Weekly</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select></div>
       </div>
       <div id="parent-goal-section"><label class="text-sm font-medium block mb-1">Parent Goal (optional)</label><select id="goal-parent" class="${t('input')} w-full px-3 py-2 text-sm"><option value="">None</option>${monthGoals.map(g => `<option value="${g.id}">${g.text}</option>`).join('')}</select></div>
+      <div><label class="text-sm font-medium block mb-1">Target (optional)</label><input type="number" id="goal-target" class="${t('input')} w-full px-3 py-2 text-sm" placeholder="e.g., 6 — leave empty for yes/no goal" min="1"><p class="${t('muted')} text-xs mt-1">Set a number to track progress (e.g., "6 videos", "14 clean days")</p></div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="text-sm font-medium block mb-1">Deadline</label><input type="date" id="goal-deadline" class="${t('input')} w-full px-3 py-2 text-sm"></div>
         <div><label class="text-sm font-medium block mb-1">Visibility</label><select id="goal-visibility" class="${t('input')} w-full px-3 py-2 text-sm"><option value="public">👁️ Public</option><option value="anonymous">🔒 Anonymous</option></select></div>
@@ -74,8 +75,9 @@ window.__addGoal = async (roomId) => {
   const parentGoalId = document.getElementById('goal-parent')?.value || null;
   const deadline = document.getElementById('goal-deadline')?.value || null;
   const visibility = document.getElementById('goal-visibility').value;
+  const targetCount = parseInt(document.getElementById('goal-target')?.value) || null;
   try {
-    await addGoal({ roomId, text, type, timeframe, period: getCurrentPeriod(timeframe), parentGoalId, deadline, visibility });
+    await addGoal({ roomId, text, type, timeframe, period: getCurrentPeriod(timeframe), parentGoalId, deadline, visibility, targetCount });
     hideModal();
     toast('Goal added!');
     await renderGoalPlanner();

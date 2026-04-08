@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import { toast, progressRing, goalCard, showModal, hideModal } from '../components.js';
 import { getCurrentPeriod, safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
-import { fetchRoomGoals, addGoal, toggleGoal, fetchNotToDos, reportViolation } from '../data/goals.js';
+import { fetchRoomGoals, addGoal, toggleGoal, incrementGoal, fetchNotToDos, reportViolation } from '../data/goals.js';
 import { fetchDeepWork, logDeepWork } from '../data/deep-work.js';
 import { fetchActivityFeed, formatActivity } from '../data/activity.js';
 import { fetchUserStats } from '../data/points.js';
@@ -217,6 +217,21 @@ window.__toggleGoal = async (goalId, completed) => {
     await toggleGoal(goalId, completed);
     // Fire confetti when completing a goal
     if (completed) fireConfetti();
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+window.__incrementGoal = async (goalId) => {
+  try {
+    const updated = await incrementGoal(goalId, 1);
+    if (updated.completed) fireConfetti();
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+window.__decrementGoal = async (goalId) => {
+  try {
+    await incrementGoal(goalId, -1);
     await renderRoomDashboard();
   } catch (err) { toast(err.message, 'error'); }
 };

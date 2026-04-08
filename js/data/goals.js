@@ -17,13 +17,14 @@ export async function fetchRoomGoals(roomId, opts = {}) {
   return data;
 }
 
-export async function addGoal({ roomId, text, type = 'priority', timeframe = 'weekly', period, parentGoalId = null, deadline = null, visibility = 'public' }) {
+export async function addGoal({ roomId, text, type = 'priority', timeframe = 'weekly', period, parentGoalId = null, deadline = null, visibility = 'public', targetCount = null }) {
   const { data, error } = await supabase
     .from('goals')
     .insert({
       user_id: AppState.user.id,
       room_id: roomId, text, type, timeframe, period,
-      parent_goal_id: parentGoalId, deadline, visibility
+      parent_goal_id: parentGoalId, deadline, visibility,
+      target_count: targetCount || null
     })
     .select()
     .single();
@@ -35,6 +36,31 @@ export async function toggleGoal(goalId, completed) {
   const { data, error } = await supabase
     .from('goals')
     .update({
+      completed,
+      completed_at: completed ? new Date().toISOString() : null
+    })
+    .eq('id', goalId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function incrementGoal(goalId, delta = 1) {
+  const { data: goal, error: fetchErr } = await supabase
+    .from('goals')
+    .select('current_count, target_count')
+    .eq('id', goalId)
+    .single();
+  if (fetchErr) throw fetchErr;
+
+  const newCount = Math.max(0, Math.min(goal.current_count + delta, goal.target_count));
+  const completed = newCount >= goal.target_count;
+
+  const { data, error } = await supabase
+    .from('goals')
+    .update({
+      current_count: newCount,
       completed,
       completed_at: completed ? new Date().toISOString() : null
     })

@@ -64,7 +64,7 @@ window.__analyseTranscript = async (roomId) => {
   document.getElementById('transcript-loading').classList.remove('hidden');
   document.getElementById('transcript-error').classList.add('hidden');
 
-  const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.\n\nParticipants (use the exact ID string as the JSON key for each participant):\n- ${participantList}\n\nFor each participant, extract:\n1. priorityGoals: Top 1-3 goals (specific, actionable)\n2. secondaryGoals: Other goals mentioned\n3. notToDo: Commitments to STOP or AVOID\n4. deadlines: Dates per goal\n5. mood: low/medium/high\n\nReturn ONLY valid JSON. Use the participant ID (the UUID string) as the key, NOT the name:\n{"participants":{"<participant-id>":{"name":"Display Name","priorityGoals":[{"text":"...","deadline":"YYYY-MM-DD or null"}],"secondaryGoals":[{"text":"...","deadline":null}],"notToDo":[{"text":"..."}],"mood":"low|medium|high"}},"sessionSummary":"2-3 sentence summary"}`;
+  const systemPrompt = `You are an accountability coach AI. Analyse the following session transcript and extract structured data for each participant.\n\nParticipants (use the exact ID string as the JSON key for each participant):\n- ${participantList}\n\nFor each participant, extract:\n1. priorityGoals: Top 1-3 goals (specific, actionable)\n2. secondaryGoals: Other goals mentioned\n3. notToDo: Commitments to STOP or AVOID\n4. deadlines: Dates per goal\n5. targetCount: If a goal has a numeric target (e.g., "make 6 videos", "work out 5 times", "eat clean 14 days"), extract the number. Otherwise null.\n6. mood: low/medium/high\n\nReturn ONLY valid JSON. Use the participant ID (the UUID string) as the key, NOT the name:\n{"participants":{"<participant-id>":{"name":"Display Name","priorityGoals":[{"text":"...","deadline":"YYYY-MM-DD or null","targetCount":6}],"secondaryGoals":[{"text":"...","deadline":null,"targetCount":null}],"notToDo":[{"text":"..."}],"mood":"low|medium|high"}},"sessionSummary":"2-3 sentence summary"}`;
 
   const requestBody = {
     model: 'claude-sonnet-4-20250514',
@@ -132,8 +132,8 @@ function showPreview(analysis, idToNameMap, transcript, roomId) {
         ${!matched ? `<span class="text-xs text-yellow-500">⚠ unmatched</span>` : ''}
       </div>
       <div class="space-y-1">
-        ${(data.priorityGoals || []).map(g => `<div class="text-sm">🎯 ${g.text}</div>`).join('')}
-        ${(data.secondaryGoals || []).map(g => `<div class="text-sm text-gray-400">📝 ${g.text}</div>`).join('')}
+        ${(data.priorityGoals || []).map(g => `<div class="text-sm">🎯 ${g.text}${g.targetCount ? ` <span class="${t('badge')} text-xs px-1.5 py-0.5">target: ${g.targetCount}</span>` : ''}</div>`).join('')}
+        ${(data.secondaryGoals || []).map(g => `<div class="text-sm text-gray-400">📝 ${g.text}${g.targetCount ? ` <span class="${t('badge')} text-xs px-1.5 py-0.5">target: ${g.targetCount}</span>` : ''}</div>`).join('')}
         ${(data.notToDo || []).map(g => `<div class="text-sm text-red-400">🚫 ${g.text}</div>`).join('')}
       </div>
     </div>`;
@@ -160,10 +160,10 @@ window.__saveSession = async () => {
       sessionParticipants.push({ userId, mood: data.mood || 'medium' });
 
       for (const g of (data.priorityGoals || [])) {
-        goals.push({ userId, text: g.text, type: 'priority', timeframe: 'weekly', period, deadline: g.deadline || null });
+        goals.push({ userId, text: g.text, type: 'priority', timeframe: 'weekly', period, deadline: g.deadline || null, targetCount: g.targetCount || null });
       }
       for (const g of (data.secondaryGoals || [])) {
-        goals.push({ userId, text: g.text, type: 'secondary', timeframe: 'weekly', period, deadline: null });
+        goals.push({ userId, text: g.text, type: 'secondary', timeframe: 'weekly', period, deadline: null, targetCount: g.targetCount || null });
       }
       for (const g of (data.notToDo || [])) {
         notToDos.push({ userId, text: g.text, period });

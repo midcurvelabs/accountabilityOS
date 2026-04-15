@@ -78,10 +78,19 @@ export async function renderRoomDashboard() {
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 space-y-4">
-            <div class="flex gap-2">
-              <input type="text" id="quick-goal" class="${t('input')} flex-1 px-3 py-2 text-sm" placeholder="Add a quick weekly goal..."
+            <div class="flex gap-2 flex-wrap">
+              <input type="text" id="quick-goal" class="${t('input')} flex-1 min-w-[160px] px-3 py-2 text-sm" placeholder="Add a quick weekly goal..."
                 onkeydown="if(event.key==='Enter')window.__quickAdd('${room.id}')">
-              <button class="${t('button')} px-4 py-2 text-sm" onclick="window.__quickAdd('${room.id}')">Add</button>
+              <select id="quick-goal-freq" class="${t('input')} px-2 py-2 text-sm shrink-0" title="How often?">
+                <option value="1">✓ Once</option>
+                <option value="7">🔁 Daily</option>
+                <option value="2">2×/wk</option>
+                <option value="3">3×/wk</option>
+                <option value="4">4×/wk</option>
+                <option value="5">5×/wk</option>
+                <option value="6">6×/wk</option>
+              </select>
+              <button class="${t('button')} px-4 py-2 text-sm shrink-0" onclick="window.__quickAdd('${room.id}')">Add</button>
             </div>
 
             <h2 class="${t('heading')} font-bold flex items-center gap-2">🎯 This Week <span class="${t('badge')} text-xs px-2 py-0.5">${period}</span></h2>
@@ -245,10 +254,14 @@ function getWeekStart() {
 // Global handlers
 window.__quickAdd = async (roomId) => {
   const input = document.getElementById('quick-goal');
+  const freqEl = document.getElementById('quick-goal-freq');
   const text = input?.value.trim();
   if (!text) return;
+  const freq = parseInt(freqEl?.value) || 1;
+  // freq=1 → boolean goal (no target); freq>1 → counter goal with weekly target
+  const targetCount = freq > 1 ? freq : null;
   try {
-    await addGoal({ roomId, text, type: 'priority', timeframe: 'weekly', period: getCurrentPeriod('weekly') });
+    await addGoal({ roomId, text, type: 'priority', timeframe: 'weekly', period: getCurrentPeriod('weekly'), targetCount });
     input.value = '';
     await renderRoomDashboard();
   } catch (err) { toast(err.message, 'error'); }

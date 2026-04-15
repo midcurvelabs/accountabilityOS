@@ -32,13 +32,22 @@ export function formatDate(date) {
   return d.toISOString().split('T')[0];
 }
 
-const VALID_AVATARS = new Set(['🔥', '⚡', '🎯', '🚀', '💎', '🦊', '🐺', '🦁', '🎸', '🎮', '🏔️', '🌊', '⭐', '🍕', '🧠', '💪', '👤']);
+export const DEFAULT_AVATAR = '🙂';
+
+const VALID_AVATARS = new Set(['🔥', '⚡', '🎯', '🚀', '💎', '🦊', '🐺', '🦁', '🎸', '🎮', '🏔️', '🌊', '⭐', '🍕', '🧠', '💪', '👤', '🙂']);
+
+// Requires the avatar to BEGIN with a real emoji pictographic character.
+// This correctly rejects mojibake like `üë§` (the Mac OS Roman rendering
+// of the UTF-8 bytes of 👤) — the Apple logo is in Private-Use-Area and ü/ë/§
+// are Latin-1 Supplement; none of them are Extended_Pictographic.
+const EMOJI_START_RE = /^\p{Extended_Pictographic}/u;
 
 export function safeAvatar(avatar) {
-  if (!avatar) return '👤';
-  // Check against known-good set first
+  if (!avatar) return DEFAULT_AVATAR;
+  // Fast path for our curated set
   if (VALID_AVATARS.has(avatar)) return avatar;
-  // Allow any single emoji (catches new valid emojis) — must be 1-2 codepoints, no latin chars
-  if (avatar.length <= 4 && !/[a-zA-Z0-9]/.test(avatar)) return avatar;
-  return '👤';
+  // Accept any string that starts with an emoji and is a reasonable length
+  // (emoji + variation selector + ZWJ sequence etc. max out around 8 codepoints)
+  if (avatar.length <= 8 && EMOJI_START_RE.test(avatar)) return avatar;
+  return DEFAULT_AVATAR;
 }

@@ -14,12 +14,13 @@ export async function renderRoomSelector() {
   try {
     const rooms = await fetchUserRooms();
 
-    // If user has exactly 1 room, auto-enter it — unless they just navigated here from inside a room
+    // If user has exactly 1 room, auto-enter it — unless they just navigated here from inside a room.
+    // The flag is cleared in the router when the user enters a room, not here — otherwise a second
+    // render triggered by the hashchange event would see a reset flag and auto-redirect.
     if (rooms.length === 1 && !AppState._cameFromRoom) {
       AppState.currentRoom = rooms[0].id;
       return navigate(`room/${rooms[0].id}`);
     }
-    AppState._cameFromRoom = false;
 
     app.innerHTML = `
       <div class="max-w-4xl mx-auto animate-fade-in-up">

@@ -4,7 +4,7 @@
     {
       "name": "accountability-os",
       "runtimeExecutable": "/usr/local/bin/python3",
-      "runtimeArgs": ["-m", "http.server", "8765", "-d", "/Users/rik/Documents/rik-docs/02_projects/Accountability"],
+      "runtimeArgs": ["-m", "http.server", "8765", "-d", "/Users/rik/Documents/rik-code/Accountability"],
       "port": 8765
     }
   ]

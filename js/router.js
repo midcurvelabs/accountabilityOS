@@ -17,29 +17,29 @@ export function parseRoute(hash) {
   return { view: hash || 'login', roomId: null };
 }
 
-export function navigate(path) {
-  location.hash = path;
-  const route = parseRoute(path);
+function applyRoute(route) {
   if (route.view === 'rooms' && AppState.currentRoom) {
     AppState._cameFromRoom = true;
   }
   AppState.currentView = route.view;
-  if (route.roomId) AppState.currentRoom = route.roomId;
-  else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) AppState.currentRoom = null;
+  if (route.roomId) {
+    AppState.currentRoom = route.roomId;
+    AppState._cameFromRoom = false;
+  } else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) {
+    AppState.currentRoom = null;
+  }
   setState({});
+}
+
+export function navigate(path) {
+  location.hash = path;
+  applyRoute(parseRoute(path));
 }
 
 export function initRouter() {
   window.addEventListener('hashchange', () => {
     const hash = location.hash.slice(1) || 'login';
-    const route = parseRoute(hash);
-    if (route.view === 'rooms' && AppState.currentRoom) {
-      AppState._cameFromRoom = true;
-    }
-    AppState.currentView = route.view;
-    if (route.roomId) AppState.currentRoom = route.roomId;
-    else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) AppState.currentRoom = null;
-    setState({});
+    applyRoute(parseRoute(hash));
   });
 
   // Parse initial hash

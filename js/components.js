@@ -34,6 +34,7 @@ export function hideModal() {
 }
 
 export function goalCard(goal, opts = {}) {
+  const readOnly = opts.readOnly === true;
   const isOverdue = goal.deadline && new Date(goal.deadline) < new Date() && !goal.completed;
   const isPriority = goal.type === 'priority';
   const borderClass = isOverdue ? t('dangerBorder') + ' border-l-4' : '';
@@ -46,18 +47,24 @@ export function goalCard(goal, opts = {}) {
     const pct = goal.target_count > 0 ? Math.round((goal.current_count / goal.target_count) * 100) : 0;
     const colors = t('ring');
     return `
-    <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
+    <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${readOnly ? '' : t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
       <div class="flex items-center gap-1 shrink-0">
-        ${goal.current_count > 0 ? `<button onclick="window.__decrementGoal('${goal.id}')"
-          class="w-6 h-8 rounded-l-lg border-2 ${t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
-          title="-1">−</button>` : ''}
-        <button onclick="window.__incrementGoal('${goal.id}')"
-          class="w-14 h-8 ${goal.current_count > 0 ? '' : 'rounded-lg'} ${goal.current_count > 0 ? 'rounded-r-lg' : ''} border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
-          title="+1">
-          ${goal.current_count}/${goal.target_count}
-        </button>
+        ${readOnly ? `
+          <div class="w-14 h-8 rounded-lg border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')}">
+            ${goal.current_count}/${goal.target_count}
+          </div>
+        ` : `
+          ${goal.current_count > 0 ? `<button onclick="window.__decrementGoal('${goal.id}')"
+            class="w-6 h-8 rounded-l-lg border-2 ${t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
+            title="-1">−</button>` : ''}
+          <button onclick="window.__incrementGoal('${goal.id}')"
+            class="w-14 h-8 ${goal.current_count > 0 ? '' : 'rounded-lg'} ${goal.current_count > 0 ? 'rounded-r-lg' : ''} border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center text-sm ${t('mono')} ${t('accent')} active:scale-90 transition-transform cursor-pointer select-none"
+            title="+1">
+            ${goal.current_count}/${goal.target_count}
+          </button>
+        `}
       </div>
-      <div class="flex-1 min-w-0 cursor-pointer" onclick="window.__editGoal('${goal.id}')">
+      <div class="flex-1 min-w-0 ${readOnly ? '' : 'cursor-pointer'}" ${readOnly ? '' : `onclick="window.__editGoal('${goal.id}')"`}>
         <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">
           ${goal.text} ${visIcon}
         </div>
@@ -74,14 +81,22 @@ export function goalCard(goal, opts = {}) {
 
   // Boolean goal: existing checkbox behavior
   return `
-    <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
-      <label class="flex items-center cursor-pointer mt-0.5">
-        <input type="checkbox" class="hidden" ${goal.completed ? 'checked' : ''} onchange="window.__toggleGoal('${goal.id}', !${goal.completed})">
-        <div class="w-5 h-5 rounded border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center transition-all">
-          ${goal.completed ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+    <div class="${t('card')} ${isPriority ? 'p-4' : 'p-3'} ${borderClass} flex items-start gap-3 ${readOnly ? '' : t('cardHover')} theme-transition ${goal.completed ? 'opacity-60' : ''}">
+      ${readOnly ? `
+        <div class="mt-0.5">
+          <div class="w-5 h-5 rounded border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center">
+            ${goal.completed ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+          </div>
         </div>
-      </label>
-      <div class="flex-1 min-w-0 cursor-pointer" onclick="window.__editGoal('${goal.id}')">
+      ` : `
+        <label class="flex items-center cursor-pointer mt-0.5">
+          <input type="checkbox" class="hidden" ${goal.completed ? 'checked' : ''} onchange="window.__toggleGoal('${goal.id}', !${goal.completed})">
+          <div class="w-5 h-5 rounded border-2 ${goal.completed ? t('accentBg') : t('accentBorder')} flex items-center justify-center transition-all">
+            ${goal.completed ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' : ''}
+          </div>
+        </label>
+      `}
+      <div class="flex-1 min-w-0 ${readOnly ? '' : 'cursor-pointer'}" ${readOnly ? '' : `onclick="window.__editGoal('${goal.id}')"`}>
         <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">
           ${goal.text} ${visIcon}
         </div>

@@ -104,6 +104,44 @@ export async function renderRoomDashboard() {
                 </div>
               `).join('')}
             ` : ''}
+
+            ${(() => {
+              const others = members.filter(m => m.id !== user.id);
+              if (others.length === 0) return '';
+              const blocks = others.map(m => {
+                const mGoals = allGoals.filter(g =>
+                  g.user_id === m.id &&
+                  g.timeframe === 'weekly' &&
+                  g.visibility === 'public'
+                );
+                const mNotToDos = notToDos.filter(n => n.user_id === m.id && n.visibility === 'public');
+                if (mGoals.length === 0 && mNotToDos.length === 0) return '';
+                const mCompleted = mGoals.filter(g => g.completed).length;
+                return `
+                  <div class="mt-2">
+                    <div class="flex items-center gap-2 mb-2">
+                      <span class="text-xl">${safeAvatar(m.avatar)}</span>
+                      <span class="${t('heading')} font-semibold text-sm">${m.name}</span>
+                      <span class="${t('muted')} text-xs ${t('mono')}">${mCompleted}/${mGoals.length} goals</span>
+                    </div>
+                    <div class="space-y-2">
+                      ${mGoals.map(g => goalCard(g, { readOnly: true })).join('')}
+                      ${mNotToDos.map(n => `
+                        <div class="${t('card')} ${t('dangerBorder')} border-l-4 p-3 flex items-center gap-3">
+                          <span class="${t('danger')} text-lg">✕</span>
+                          <span class="text-sm flex-1">${n.text}</span>
+                          ${(n.violations || []).length > 0 ? `<span class="${t('dangerBg')} text-xs px-2 py-0.5 rounded-full">${n.violations.length} violations</span>` : ''}
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>`;
+              }).filter(Boolean).join('');
+              if (!blocks) return '';
+              return `
+                <h2 class="${t('heading')} font-bold mt-6">👥 Teammates</h2>
+                ${blocks}
+              `;
+            })()}
           </div>
 
           <div class="space-y-4">

@@ -57,7 +57,7 @@ export function goalCard(goal, opts = {}) {
           ${goal.current_count}/${goal.target_count}
         </button>
       </div>
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 min-w-0 cursor-pointer" onclick="window.__editGoal('${goal.id}')">
         <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">
           ${goal.text} ${visIcon}
         </div>
@@ -81,7 +81,7 @@ export function goalCard(goal, opts = {}) {
           ${goal.completed ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>' : ''}
         </div>
       </label>
-      <div class="flex-1 min-w-0">
+      <div class="flex-1 min-w-0 cursor-pointer" onclick="window.__editGoal('${goal.id}')">
         <div class="${isPriority ? 'font-semibold' : 'text-sm'} ${goal.completed ? 'line-through' : ''}">
           ${goal.text} ${visIcon}
         </div>

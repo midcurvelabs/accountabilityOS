@@ -71,6 +71,13 @@ export async function incrementGoal(goalId, delta = 1) {
   return data;
 }
 
+export async function updateGoal(goalId, updates) {
+  const { data, error } = await supabase
+    .from('goals').update(updates).eq('id', goalId).select().single();
+  if (error) throw error;
+  return data;
+}
+
 export async function deleteGoal(goalId) {
   const { error } = await supabase.from('goals').delete().eq('id', goalId);
   if (error) throw error;
@@ -97,6 +104,18 @@ export async function addNotToDo({ roomId, text, period, visibility = 'public' }
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function updateNotToDo(notToDoId, updates) {
+  const { data, error } = await supabase
+    .from('not_to_dos').update(updates).eq('id', notToDoId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteNotToDo(notToDoId) {
+  const { error } = await supabase.from('not_to_dos').delete().eq('id', notToDoId);
+  if (error) throw error;
 }
 
 export async function reportViolation(notToDoId, type = 'self') {

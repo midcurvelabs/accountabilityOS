@@ -4,7 +4,7 @@ import { navigate } from '../router.js';
 import { toast, progressRing, goalCard, showModal, hideModal } from '../components.js';
 import { getCurrentPeriod, safeAvatar } from '../helpers.js';
 import { fetchRoom } from '../data/rooms.js';
-import { fetchRoomGoals, addGoal, toggleGoal, incrementGoal, fetchNotToDos, reportViolation } from '../data/goals.js';
+import { fetchRoomGoals, addGoal, toggleGoal, incrementGoal, updateGoal, deleteGoal, fetchNotToDos, updateNotToDo, deleteNotToDo, reportViolation } from '../data/goals.js';
 import { fetchDeepWork, logDeepWork } from '../data/deep-work.js';
 import { fetchActivityFeed, formatActivity } from '../data/activity.js';
 import { fetchUserStats } from '../data/points.js';
@@ -13,6 +13,8 @@ import { debounce } from '../helpers.js';
 import { fireConfetti } from '../confetti.js';
 
 let roomCache = null;
+let goalsCache = [];
+let notToDosCache = [];
 
 // Debounced re-render to batch rapid realtime events
 const debouncedRender = debounce(() => renderRoomDashboard(), 500);
@@ -38,6 +40,8 @@ export async function renderRoomDashboard() {
       fetchActivityFeed(roomId, 10).catch(() => []),
     ]);
     roomCache = room;
+    goalsCache = allGoals;
+    notToDosCache = notToDos;
 
     const user = AppState.user;
     const members = room.members || [];
@@ -91,12 +95,12 @@ export async function renderRoomDashboard() {
               <h2 class="${t('heading')} font-bold mt-4">🚫 NOT-to-do</h2>
               ${myNotToDos.map(n => `
                 <div class="${t('card')} ${t('dangerBorder')} border-l-4 p-3 flex items-center justify-between">
-                  <div class="flex items-center gap-3">
+                  <div class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onclick="window.__editNotToDo('${n.id}')">
                     <span class="${t('danger')} text-lg">✕</span>
                     <span class="text-sm">${n.text}</span>
                     ${(n.violations || []).length > 0 ? `<span class="${t('dangerBg')} text-xs px-2 py-0.5 rounded-full">${n.violations.length} violations</span>` : ''}
                   </div>
-                  <button class="${t('buttonDanger')} text-xs px-2 py-1" onclick="window.__selfReport('${n.id}')">I broke this</button>
+                  <button class="${t('buttonDanger')} text-xs px-2 py-1 shrink-0" onclick="window.__selfReport('${n.id}')">I broke this</button>
                 </div>
               `).join('')}
             ` : ''}
@@ -275,3 +279,114 @@ window.__logDeepWork = async (roomId) => {
 };
 
 window.__nav = (path) => navigate(path);
+
+// --- Edit Goal Modal ---
+window.__editGoal = (goalId) => {
+  const goal = goalsCache.find(g => g.id === goalId);
+  if (!goal) return;
+  const isCounter = goal.target_count != null;
+  showModal(`<div class="p-6">
+    <h2 class="${t('heading')} text-xl font-bold mb-4">Edit Goal</h2>
+    <div class="space-y-3">
+      <div>
+        <label class="text-sm font-medium block mb-1">Goal text</label>
+        <input type="text" id="edit-goal-text" class="${t('input')} w-full px-3 py-2 text-sm" value="${goal.text.replace(/"/g, '&quot;')}">
+      </div>
+      <div>
+        <label class="text-sm font-medium block mb-1">Type</label>
+        <select id="edit-goal-type" class="${t('input')} w-full px-3 py-2 text-sm">
+          <option value="priority" ${goal.type === 'priority' ? 'selected' : ''}>Priority</option>
+          <option value="secondary" ${goal.type === 'secondary' ? 'selected' : ''}>Secondary</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm font-medium block mb-1">Deadline</label>
+        <input type="date" id="edit-goal-deadline" class="${t('input')} w-full px-3 py-2 text-sm" value="${goal.deadline || ''}">
+      </div>
+      ${isCounter ? `<div>
+        <label class="text-sm font-medium block mb-1">Target count</label>
+        <input type="number" id="edit-goal-target" class="${t('input')} w-full px-3 py-2 text-sm" value="${goal.target_count}" min="1">
+      </div>` : ''}
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="${t('button')} flex-1 py-3 text-sm" onclick="window.__saveGoal('${goal.id}')">Save</button>
+      <button class="${t('buttonDanger')} py-3 px-4 text-sm" id="delete-goal-btn" onclick="window.__deleteGoal('${goal.id}')">Delete</button>
+    </div>
+  </div>`);
+};
+
+window.__saveGoal = async (goalId) => {
+  const text = document.getElementById('edit-goal-text')?.value.trim();
+  if (!text) { toast('Goal text is required', 'error'); return; }
+  const type = document.getElementById('edit-goal-type')?.value;
+  const deadline = document.getElementById('edit-goal-deadline')?.value || null;
+  const targetEl = document.getElementById('edit-goal-target');
+  const updates = { text, type, deadline };
+  if (targetEl) updates.target_count = parseInt(targetEl.value) || 1;
+  try {
+    await updateGoal(goalId, updates);
+    hideModal();
+    toast('Goal updated');
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+window.__deleteGoal = async (goalId) => {
+  const btn = document.getElementById('delete-goal-btn');
+  if (btn && !btn.dataset.confirmed) {
+    btn.dataset.confirmed = 'true';
+    btn.textContent = 'Confirm delete?';
+    return;
+  }
+  try {
+    await deleteGoal(goalId);
+    hideModal();
+    toast('Goal deleted');
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+// --- Edit Not-To-Do Modal ---
+window.__editNotToDo = (notToDoId) => {
+  const ntd = notToDosCache.find(n => n.id === notToDoId);
+  if (!ntd) return;
+  showModal(`<div class="p-6">
+    <h2 class="${t('heading')} text-xl font-bold mb-4">Edit NOT-to-do</h2>
+    <div class="space-y-3">
+      <div>
+        <label class="text-sm font-medium block mb-1">Text</label>
+        <input type="text" id="edit-ntd-text" class="${t('input')} w-full px-3 py-2 text-sm" value="${ntd.text.replace(/"/g, '&quot;')}">
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="${t('button')} flex-1 py-3 text-sm" onclick="window.__saveNotToDo('${ntd.id}')">Save</button>
+      <button class="${t('buttonDanger')} py-3 px-4 text-sm" id="delete-ntd-btn" onclick="window.__deleteNotToDo('${ntd.id}')">Delete</button>
+    </div>
+  </div>`);
+};
+
+window.__saveNotToDo = async (notToDoId) => {
+  const text = document.getElementById('edit-ntd-text')?.value.trim();
+  if (!text) { toast('Text is required', 'error'); return; }
+  try {
+    await updateNotToDo(notToDoId, { text });
+    hideModal();
+    toast('NOT-to-do updated');
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};
+
+window.__deleteNotToDo = async (notToDoId) => {
+  const btn = document.getElementById('delete-ntd-btn');
+  if (btn && !btn.dataset.confirmed) {
+    btn.dataset.confirmed = 'true';
+    btn.textContent = 'Confirm delete?';
+    return;
+  }
+  try {
+    await deleteNotToDo(notToDoId);
+    hideModal();
+    toast('NOT-to-do deleted');
+    await renderRoomDashboard();
+  } catch (err) { toast(err.message, 'error'); }
+};

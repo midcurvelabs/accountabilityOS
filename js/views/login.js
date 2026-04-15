@@ -26,8 +26,8 @@ export function renderLogin() {
             <span>or</span>
             <div class="flex-1 border-t ${t('divider')}"></div>
           </div>
-          <button class="${t('buttonSecondary')} w-full py-3 text-sm opacity-50 cursor-not-allowed" disabled>
-            🔑 Sign in with Google (coming soon)
+          <button class="${t('buttonSecondary')} w-full py-3 text-sm" onclick="window.__signInGoogle()">
+            🔑 Sign in with Google
           </button>
         </div>
         <div id="magic-link-sent" class="hidden mt-4 ${t('card')} p-4">

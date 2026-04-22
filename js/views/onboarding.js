@@ -6,7 +6,7 @@ const SCREENS = [
     title: 'Create a Room',
     desc: 'Start an accountability group with your crew. Each room gets a unique invite code — share it and your friends join instantly.',
     visual: `<div class="flex items-center gap-2 mt-4">
-      <div class="px-3 py-1.5 rounded-lg bg-[#1e1e2a] border border-[#333] text-xs font-mono tracking-widest text-gray-300">AX7K2M</div>
+      <div class="px-3 py-1.5 rounded-lg bg-[#161410] border border-[#26231D] text-xs font-mono tracking-widest text-gray-300">AX7K2M</div>
       <span class="text-xs text-gray-500">invite code</span>
     </div>`
   },
@@ -15,9 +15,9 @@ const SCREENS = [
     title: 'Set Goals Together',
     desc: 'Add weekly, monthly, or quarterly goals. Prioritize what matters. Your crew sees your commitments — and whether you follow through.',
     visual: `<div class="space-y-2 mt-4 text-left max-w-xs mx-auto">
-      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-flex items-center justify-center text-[10px]">&#10003;</span> Ship landing page <span class="text-[10px] bg-[#1e1e2a] px-1.5 py-0.5 rounded-full text-gray-400">W</span></div>
-      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-block"></span> Record 3 podcast episodes <span class="text-[10px] bg-[#1e1e2a] px-1.5 py-0.5 rounded-full text-gray-400">M</span></div>
-      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-block"></span> Launch MVP <span class="text-[10px] bg-[#1e1e2a] px-1.5 py-0.5 rounded-full text-gray-400">Q</span></div>
+      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-flex items-center justify-center text-[10px]">&#10003;</span> Ship landing page <span class="text-[10px] bg-[#161410] px-1.5 py-0.5 rounded-full text-gray-400">W</span></div>
+      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-block"></span> Record 3 podcast episodes <span class="text-[10px] bg-[#161410] px-1.5 py-0.5 rounded-full text-gray-400">M</span></div>
+      <div class="flex items-center gap-2 text-sm"><span class="w-4 h-4 rounded border-2 border-green-500 inline-block"></span> Launch MVP <span class="text-[10px] bg-[#161410] px-1.5 py-0.5 rounded-full text-gray-400">Q</span></div>
     </div>`
   },
   {
@@ -63,7 +63,7 @@ function renderOverlayContent() {
         <!-- Progress dots -->
         <div class="flex justify-center gap-2 mb-6">
           ${SCREENS.map((_, i) => `
-            <div class="h-1.5 rounded-full transition-all ${i === currentStep ? 'bg-[#00ff88] w-6' : i < currentStep ? 'bg-[#00ff88]/40 w-1.5' : 'bg-[#1e1e2a] w-1.5'}"></div>
+            <div class="h-1.5 rounded-full transition-all ${i === currentStep ? 'bg-[#E4CA00] w-6' : i < currentStep ? 'bg-[#E4CA00]/40 w-1.5' : 'bg-[#161410] w-1.5'}"></div>
           `).join('')}
         </div>
 

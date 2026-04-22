@@ -115,7 +115,7 @@ function renderTopbar() {
 
   if (!AppState.user) {
     topbar.innerHTML = `<div class="${t('heading')} font-bold text-lg">Accountability OS</div>
-      <button onclick="window.__toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">${AppState.theme === 'dark' ? '🌙' : '☀️'}</button>`;
+      <button onclick="window.__toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">${AppState.theme === 'middle' ? '🌙' : '☀️'}</button>`;
     return;
   }
 
@@ -126,7 +126,7 @@ function renderTopbar() {
       <span class="${t('heading')} font-bold text-sm">${profile?.name || ''}</span>
     </div>
     <div class="flex items-center gap-3">
-      <button onclick="window.__toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">${AppState.theme === 'dark' ? '🌙' : '☀️'}</button>
+      <button onclick="window.__toggleTheme()" class="w-8 h-8 rounded-lg flex items-center justify-center ${t('surfaceHover')} text-lg">${AppState.theme === 'middle' ? '🌙' : '☀️'}</button>
     </div>`;
 }
 

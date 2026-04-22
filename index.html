@@ -5,36 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Accountability OS</title>
 
-  <!-- Fonts -->
+  <!-- Curve tokens (source of truth: /css/tokens.css) -->
+  <link rel="stylesheet" href="css/tokens.css?v=1">
+
+  <!-- Fonts: Bricolage (middle/display), Caprasimo (right/display), Inter (ui), JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700;12..96,800&family=Caprasimo&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       safelist: [
-        'bg-[#0a0a0f]', 'bg-[#13131a]', 'bg-[#0d0d14]', 'bg-[#1e1e2a]', 'bg-[#1a1a24]', 'bg-[#252530]',
-        'bg-[#b8f0ff]', 'bg-[#a0e0ff]',
-        'text-[#00ff88]', 'text-[#ffaa00]', 'text-[#ff3b3b]',
-        'border-[#00ff88]', 'border-[#1e1e2a]', 'border-[#222]', 'border-[#333]', 'border-[#ff3b3b]',
-        'border-[#0a0a0f]', 'border-[#ffaa00]',
-        'hover:bg-[#1a1a24]', 'hover:bg-[#252530]',
-        'hover:border-[#00ff88]/30', 'hover:shadow-[0_0_20px_rgba(0,255,136,0.05)]',
-        'shadow-[4px_4px_0_#222]', 'shadow-[4px_6px_0_#222]', 'shadow-[3px_3px_0_#222]', 'shadow-[3px_5px_0_#222]',
-        'shadow-[1px_1px_0_#222]', 'shadow-[6px_6px_0_#222]', 'shadow-[3px_3px_0_#c44]',
-        'bg-[#00ff88]', 'bg-[#ff3b3b]/10', 'bg-[#ffaa00]/10', 'bg-[#ff3b3b]/20', 'border-[#ff3b3b]/30', 'border-[#ffaa00]/30',
-        'focus:border-[#00ff88]', 'focus:ring-[#00ff88]/30',
-        'bg-[#0d0d14]/90', 'border-r-3', 'border-b-3',
-        'border-l-4', 'border-2', 'border-3',
+        // middle (liquid glass) hex tokens
+        'bg-[#0E0D0A]', 'bg-[#161410]', 'bg-[#050504]',
+        'text-[#F7F5EF]', 'text-[#9E9785]',
+        'border-[#26231D]', 'border-[#3A3529]',
+        'hover:bg-[#3A3529]/40', 'hover:bg-[#3A3529]/60',
+        'bg-[#0E0D0A]/80',
+        // right (cartoon) hex tokens
+        'bg-[#FAF4D9]', 'bg-[#F2E8B8]', 'bg-[#FFF3D6]', 'bg-[#FFD6D2]',
+        // accent (midcurved yellow)
+        'bg-[#E4CA00]', 'text-[#E4CA00]', 'text-[#B8A000]', 'border-[#E4CA00]',
+        'hover:border-[#E4CA00]/40',
+        'focus:border-[#E4CA00]', 'focus:ring-[#E4CA00]/30', 'focus:ring-[#E4CA00]',
+        // status
+        'bg-[#E8564A]/10', 'bg-[#E8564A]/20', 'text-[#E8564A]', 'border-[#E8564A]/30',
+        'bg-[#E8B648]/10', 'text-[#E8B648]', 'border-[#E8B648]/30',
+        // brutalist shadows
+        'shadow-[4px_4px_0_#000]', 'shadow-[4px_6px_0_#000]',
+        'shadow-[3px_3px_0_#000]', 'shadow-[3px_5px_0_#000]',
+        'shadow-[1px_1px_0_#000]', 'shadow-[6px_6px_0_#000]',
+        'hover:shadow-[0_0_40px_-8px_rgba(228,202,0,0.25)]',
+        // borders
+        'border-r-3', 'border-b-3', 'border-l-4', 'border-2', 'border-3',
       ],
       theme: {
         extend: {
           fontFamily: {
-            heading: ['Syne', 'sans-serif'],
-            mono: ['Space Mono', 'monospace'],
-            cartoon: ['Fredoka', 'sans-serif'],
+            heading: ['Bricolage Grotesque', 'Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Space Mono', 'monospace'],
+            cartoon: ['Caprasimo', 'Bricolage Grotesque', 'serif'],
           },
           borderWidth: { '3': '3px' }
         }
@@ -55,10 +67,11 @@
     .animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
     .animate-toast-in { animation: toast-in 0.3s ease-out; }
     .animate-toast-out { animation: toast-out 0.3s ease-in forwards; }
-    .scanline-bg { background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px); }
     body, .theme-transition { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
     .progress-ring-circle { transition: stroke-dashoffset 0.5s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
   </style>
 </head>
 

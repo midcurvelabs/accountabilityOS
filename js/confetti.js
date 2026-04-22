@@ -2,7 +2,7 @@
 // Confetti Effect — lightweight canvas-based celebration
 // ============================================================
 
-const COLORS = ['#00ff88', '#ffaa00', '#ff3b3b', '#a78bfa', '#38bdf8', '#f472b6'];
+const COLORS = ['#E4CA00', '#E8B648', '#E8564A', '#a78bfa', '#38bdf8', '#f472b6'];
 const PARTICLE_COUNT = 60;
 const DURATION = 2000;
 

@@ -26,7 +26,8 @@ const C = {
   // status
   warn:         '#E8B648',
   danger:       '#E8564A',
-  success:      '#6DC88C',
+  success:      '#4ADE80',   // progress / done accent (cyberpunk-green lineage)
+  successDeep:  '#16A34A',
 };
 
 export const THEMES = {
@@ -68,7 +69,11 @@ export const THEMES = {
     modal: `glass-surface rounded-2xl`,
     toast: `glass-surface text-[${C.m_text}] rounded-xl`,
 
-    ring: { track: C.m_border, fill: C.accent },
+    success: `text-[${C.success}]`,
+    successBg: `bg-[${C.success}] text-black`,
+    successBorder: `border-[${C.success}]`,
+
+    ring: { track: C.m_border, fill: C.success },
   },
 
   // RIGHT · cartoon brutalist. Pale yellow, Caprasimo, 3px borders, 4px4px shadow.
@@ -109,7 +114,11 @@ export const THEMES = {
     modal: `bg-white border-3 border-black rounded-2xl shadow-[6px_6px_0_#000]`,
     toast: `bg-white border-3 border-black text-black rounded-xl shadow-[4px_4px_0_#000]`,
 
-    ring: { track: '#E5E0C8', fill: C.black },
+    success: `text-[${C.successDeep}]`,
+    successBg: `bg-[${C.success}] text-black`,
+    successBorder: `border-[${C.successDeep}]`,
+
+    ring: { track: '#E5E0C8', fill: C.success },
   },
 };
 

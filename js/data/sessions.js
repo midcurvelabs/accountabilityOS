@@ -1,4 +1,47 @@
 import { supabase } from '../supabase.js';
+import { AppState } from '../state.js';
+
+/**
+ * Fetch the most recent session for a room. Returns null if none exist yet
+ * (e.g. rooms that have never had a transcript uploaded or a manual
+ * "Start new week" press).
+ */
+export async function fetchLatestSession(roomId) {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .eq('room_id', roomId)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Create an "empty" session — no transcript, no AI analysis.
+ * Used by the manual "Start new week" button to close the current epoch
+ * and open a new one on demand (e.g. weeks where sessions happen on Tuesday,
+ * not Monday).
+ */
+export async function createEmptySession({ roomId, summary = null }) {
+  const userId = AppState.user?.id;
+  if (!userId) throw new Error('Not authenticated');
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from('sessions')
+    .insert({
+      room_id: roomId,
+      date: today,
+      session_summary: summary,
+      created_by: userId,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
 
 export async function fetchRoomSessions(roomId, opts = {}) {
   const limit = opts.limit || 20;

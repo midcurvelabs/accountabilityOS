@@ -9,6 +9,9 @@ export async function fetchRoomGoals(roomId, opts = {}) {
   if (opts.timeframe) query = query.eq('timeframe', opts.timeframe);
   if (opts.period) query = query.eq('period', opts.period);
   if (opts.type) query = query.eq('type', opts.type);
+  // sessionId filter: UUID string → eq; explicit null → is null; undefined → no filter.
+  if (opts.sessionId === null) query = query.is('session_id', null);
+  else if (opts.sessionId) query = query.eq('session_id', opts.sessionId);
   query = query.order('created_at', { ascending: true }).range(offset, offset + limit - 1);
   const { data, error, count } = await query;
   if (error) throw error;
@@ -17,14 +20,31 @@ export async function fetchRoomGoals(roomId, opts = {}) {
   return data;
 }
 
-export async function addGoal({ roomId, text, type = 'priority', timeframe = 'weekly', period, parentGoalId = null, deadline = null, visibility = 'public', targetCount = null }) {
+/**
+ * Move goals to a different session (carry-forward to a new epoch).
+ * Also clears `completed` state optionally — default keeps state so a goal
+ * carried as "still in progress" remains uncompleted.
+ */
+export async function carryForwardGoals(goalIds, newSessionId) {
+  if (!goalIds?.length) return [];
+  const { data, error } = await supabase
+    .from('goals')
+    .update({ session_id: newSessionId })
+    .in('id', goalIds)
+    .select();
+  if (error) throw error;
+  return data;
+}
+
+export async function addGoal({ roomId, text, type = 'priority', timeframe = 'weekly', period, parentGoalId = null, deadline = null, visibility = 'public', targetCount = null, sessionId = null }) {
   const { data, error } = await supabase
     .from('goals')
     .insert({
       user_id: AppState.user.id,
       room_id: roomId, text, type, timeframe, period,
       parent_goal_id: parentGoalId, deadline, visibility,
-      target_count: targetCount || null
+      target_count: targetCount || null,
+      session_id: sessionId || null
     })
     .select()
     .single();

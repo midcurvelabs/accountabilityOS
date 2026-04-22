@@ -32,6 +32,19 @@ export function formatDate(date) {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Short, human-friendly date for session labels. e.g. "Apr 21".
+ * Falls back to ISO if the locale formatter misbehaves.
+ */
+export function formatShortDate(date) {
+  if (!date) return '';
+  try {
+    return new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return formatDate(date);
+  }
+}
+
 export const DEFAULT_AVATAR = '🙂';
 
 const VALID_AVATARS = new Set(['🔥', '⚡', '🎯', '🚀', '💎', '🦊', '🐺', '🦁', '🎸', '🎮', '🏔️', '🌊', '⭐', '🍕', '🧠', '💪', '👤', '🙂']);

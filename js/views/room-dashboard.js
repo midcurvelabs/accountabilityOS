@@ -9,6 +9,7 @@ import { fetchRoomSessions, createEmptySession } from '../data/sessions.js';
 import { fetchDeepWork, logDeepWork } from '../data/deep-work.js';
 import { fetchActivityFeed, formatActivity } from '../data/activity.js';
 import { fetchUserStats } from '../data/points.js';
+import { fetchChallenges } from '../data/challenges.js';
 import { subscribeToRoom } from '../realtime.js';
 import { debounce } from '../helpers.js';
 import { fireConfetti } from '../confetti.js';
@@ -74,14 +75,29 @@ export async function renderRoomDashboard() {
   }
 
   try {
-    const [room, sessions, allGoals, allNotToDos, deepWork, activity] = await Promise.all([
+    const [room, sessions, allGoals, allNotToDos, deepWork, activity, allChallenges] = await Promise.all([
       fetchRoom(roomId),
       fetchRoomSessions(roomId, { limit: 50 }),
       fetchRoomGoals(roomId, { timeframe: 'weekly', limit: 500 }),
       fetchNotToDos(roomId, { limit: 200 }),
       fetchDeepWork(roomId, { since: getWeekStart() }),
       fetchActivityFeed(roomId, 10).catch(() => []),
+      fetchChallenges().catch(() => []),
     ]);
+    // Distinct cohort cards: dedupe by source_token (or title fallback) so 50 members
+    // running the same plan show as one cohort, not 50.
+    const roomChallenges = (allChallenges || []).filter(c => c.room_id === roomId);
+    const cohortCards = [];
+    const seenKey = new Set();
+    for (const c of roomChallenges) {
+      const key = c.source_token || c.title;
+      if (seenKey.has(key)) continue;
+      seenKey.add(key);
+      // Pick a representative challenge — prefer the viewer's own if they have one,
+      // else the first match — so the deep-link lands somewhere meaningful.
+      const own = roomChallenges.find(o => (o.source_token || o.title) === key && o.user_id === AppState.user.id);
+      cohortCards.push({ rep: own || c, key });
+    }
     roomCache = room;
     sessionsCache = sessions;
 
@@ -165,6 +181,29 @@ export async function renderRoomDashboard() {
             ${isCurrentEpoch ? `<button class="${t('button')} px-4 py-2 text-sm" onclick="window.__showTranscript('${room.id}')">+ New Session</button>` : ''}
           </div>
         </div>
+
+        ${cohortCards.length > 0 ? `
+          <div class="${t('card')} p-4 mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <div class="${t('heading')} font-bold text-sm">📅 Cohort challenges</div>
+              <div class="${t('muted')} text-xs">${cohortCards.length} active</div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${cohortCards.map(({ rep }) => {
+                const memberCount = roomChallenges.filter(c => (c.source_token || c.title) === (rep.source_token || rep.title)).length;
+                return `
+                  <button onclick="window.__nav('room/${room.id}/challenge/${rep.id}')" class="${t('surface')} ${t('surfaceHover')} rounded-xl px-3 py-2 text-left flex items-center justify-between gap-3 transition">
+                    <div class="min-w-0">
+                      <div class="${t('heading')} font-semibold text-sm truncate">${rep.title}</div>
+                      <div class="${t('muted')} text-xs">${memberCount} ${memberCount === 1 ? 'member' : 'members'}</div>
+                    </div>
+                    <div class="${t('accent')} text-lg shrink-0">→</div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 space-y-4">

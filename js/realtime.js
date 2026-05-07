@@ -4,6 +4,8 @@ import { AppState } from './state.js';
 import { formatActivity } from './data/activity.js';
 
 let currentChannel = null;
+let currentChallengeChannel = null;
+let currentCohortChannel = null;
 
 export function subscribeToRoom(roomId, handlers = {}) {
   unsubscribeAll();
@@ -49,9 +51,58 @@ async function showActivityToast(activity) {
   toast(`${avatar} ${name} ${formatted.text}`, 'info');
 }
 
+export function subscribeToChallenge(challengeId, handlers = {}) {
+  unsubscribeChallenge();
+  currentChallengeChannel = supabase
+    .channel(`challenge:${challengeId}`)
+    .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'challenge_days', filter: `challenge_id=eq.${challengeId}` },
+        payload => handlers.onDayChange?.(payload))
+    .subscribe();
+}
+
+export function unsubscribeChallenge() {
+  if (currentChallengeChannel) {
+    supabase.removeChannel(currentChallengeChannel);
+    currentChallengeChannel = null;
+  }
+}
+
+/**
+ * Subscribe to challenge_posts INSERTs across an entire cohort.
+ *
+ * No room_id filter is possible because challenge_posts has no room_id column,
+ * and a server-side `.in('challenge_id', [...])` filter isn't supported by
+ * postgres_changes. Instead we subscribe to ALL inserts on the table and have
+ * the handler filter client-side via the cohortChallengeIdSet. RLS still gates
+ * delivery — the client only receives rows it could SELECT anyway.
+ */
+export function subscribeToCohortChallenge(roomId, challengeId, cohortChallengeIdSet, handlers = {}) {
+  unsubscribeCohort();
+  currentCohortChannel = supabase
+    .channel(`cohort:${roomId}:${challengeId}`)
+    .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'challenge_posts' },
+        payload => {
+          if (cohortChallengeIdSet?.has(payload.new?.challenge_id)) {
+            handlers.onPost?.(payload);
+          }
+        })
+    .subscribe();
+}
+
+export function unsubscribeCohort() {
+  if (currentCohortChannel) {
+    supabase.removeChannel(currentCohortChannel);
+    currentCohortChannel = null;
+  }
+}
+
 export function unsubscribeAll() {
   if (currentChannel) {
     supabase.removeChannel(currentChannel);
     currentChannel = null;
   }
+  unsubscribeChallenge();
+  unsubscribeCohort();
 }

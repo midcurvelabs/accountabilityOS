@@ -4,7 +4,7 @@
 import { supabase, onAuthChange, signOut } from './supabase.js';
 import { AppState, setState, setRenderer } from './state.js';
 import { t, applyTheme, toggleTheme } from './themes.js';
-import { initRouter, navigate } from './router.js';
+import { initRouter, navigate, parseRoute } from './router.js';
 import { hideModal } from './components.js';
 import { safeAvatar } from './helpers.js';
 import { unsubscribeAll } from './realtime.js';
@@ -18,6 +18,9 @@ import { renderRoomLeaderboard } from './views/leaderboard.js';
 import { renderPotView } from './views/pot.js';
 import { renderRoomSettings, renderGlobalSettings } from './views/settings.js';
 import { renderJoinRoom } from './views/join.js';
+import { renderChallenges } from './views/challenges.js';
+import { renderChallenge, renderImport } from './views/challenge.js';
+import { renderCohortChallenge } from './views/cohort-challenge.js';
 import { showOnboardingOverlay, shouldShowOnboarding } from './views/onboarding.js';
 import './views/transcript.js';
 
@@ -33,6 +36,11 @@ function render() {
 
   // Not authenticated
   if (!AppState.user) {
+    // Capture import deep links before redirecting to login so we can resume after sign-in.
+    if (v === 'import') {
+      const route = parseRoute(location.hash.slice(1));
+      if (route.importToken) sessionStorage.setItem('pending_import_token', route.importToken);
+    }
     if (v === 'profile-setup') return renderProfileSetup();
     return renderLogin();
   }
@@ -45,11 +53,12 @@ function render() {
   // Room views
   if (AppState.currentRoom) {
     switch (v) {
-      case 'room-dashboard': return renderRoomDashboard();
-      case 'goals': return renderGoalPlanner();
-      case 'leaderboard': return renderRoomLeaderboard();
-      case 'pot': return renderPotView();
-      case 'settings': return renderRoomSettings();
+      case 'room-dashboard':    return renderRoomDashboard();
+      case 'goals':             return renderGoalPlanner();
+      case 'leaderboard':       return renderRoomLeaderboard();
+      case 'pot':               return renderPotView();
+      case 'settings':          return renderRoomSettings();
+      case 'cohort-challenge':  return renderCohortChallenge();
     }
   }
 
@@ -60,7 +69,10 @@ function render() {
       if (shouldShowOnboarding()) setTimeout(showOnboardingOverlay, 300);
       return;
     case 'global-settings': return renderGlobalSettings();
-    case 'join': return renderJoinRoom();
+    case 'join':       return renderJoinRoom();
+    case 'challenges': return renderChallenges();
+    case 'challenge':  return renderChallenge();
+    case 'import':     return renderImport();
     default:
       renderRoomSelector();
       if (shouldShowOnboarding()) setTimeout(showOnboardingOverlay, 300);
@@ -98,8 +110,10 @@ function renderSidebar() {
       `<button onclick="window.__nav('${i.action}')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${i.active ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="${i.label}">${i.icon}</button>`
     ).join('');
   } else {
+    const isChallengesActive = v === 'challenges' || v === 'challenge' || v === 'import';
     sidebar.innerHTML = `
       <div class="text-xl mt-2">🎯</div>
+      <button onclick="window.__nav('challenges')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${isChallengesActive ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="Challenges">📅</button>
       <div class="flex-1"></div>
       <button onclick="window.__nav('global-settings')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t('surfaceHover')}" title="Settings">⚙️</button>
     `;
@@ -176,7 +190,13 @@ async function init() {
         .single();
       AppState.profile = profile;
 
-      // Check for pending join code from deep link
+      // Check for pending deep links — import token takes priority over join code.
+      const pendingImport = sessionStorage.getItem('pending_import_token');
+      if (pendingImport) {
+        sessionStorage.removeItem('pending_import_token');
+        navigate(`import/${pendingImport}`);
+        return;
+      }
       const pendingCode = sessionStorage.getItem('pending_join_code');
       if (pendingCode) {
         sessionStorage.removeItem('pending_join_code');

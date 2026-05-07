@@ -12,8 +12,26 @@ export function parseRoute(hash) {
   }
 
   if (parts[0] === 'room' && parts[1]) {
+    // Sub-route: room/<id>/challenge/<challengeId> → cohort dashboard
+    if (parts[2] === 'challenge' && parts[3]) {
+      return { view: 'cohort-challenge', roomId: parts[1], challengeId: parts[3] };
+    }
     return { view: parts[2] || 'room-dashboard', roomId: parts[1] };
   }
+
+  // Deep link: import/:token (30x30 plan handoff)
+  if (parts[0] === 'import' && parts[1]) {
+    return { view: 'import', roomId: null, importToken: parts[1] };
+  }
+
+  // Challenge views
+  if (parts[0] === 'challenge' && parts[1]) {
+    return { view: 'challenge', roomId: null, challengeId: parts[1] };
+  }
+  if (parts[0] === 'challenges') {
+    return { view: 'challenges', roomId: null };
+  }
+
   return { view: hash || 'login', roomId: null };
 }
 
@@ -28,6 +46,12 @@ function applyRoute(route) {
   } else if (!['room-dashboard', 'goals', 'pot'].includes(route.view)) {
     AppState.currentRoom = null;
   }
+  // Stash route-derived params so views can read them without re-parsing the hash.
+  AppState.routeParams = {
+    challengeId: route.challengeId || null,
+    importToken: route.importToken || null,
+    joinCode:    route.joinCode    || null,
+  };
   setState({});
 }
 

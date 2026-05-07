@@ -97,29 +97,55 @@ function renderSidebar() {
   const room = AppState.currentRoom;
   const v = AppState.currentView;
 
+  const expanded = document.documentElement.getAttribute('data-sidebar-expanded') === 'true';
+  const toggleIcon = expanded ? '⟨' : '⟩';
+  const toggleLabel = expanded ? 'Collapse' : 'Expand';
+
+  const sidebarBtn = (i) => `
+    <button onclick="window.__nav('${i.action}')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${i.active ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="${i.label}">
+      <span>${i.icon}</span>
+      <span class="sidebar-label">${i.label}</span>
+    </button>`;
+
+  const toggleBtn = `
+    <button onclick="window.__toggleSidebar()" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t('surfaceHover')} max-md:hidden" title="${toggleLabel} sidebar">
+      <span>${toggleIcon}</span>
+      <span class="sidebar-label">${toggleLabel}</span>
+    </button>`;
+
   if (room) {
     const items = [
       { icon: '←', action: 'rooms', label: 'Rooms', active: false },
       { icon: '🏠', action: `room/${room}`, label: 'Dashboard', active: v === 'room-dashboard' },
       { icon: '📋', action: `room/${room}/goals`, label: 'Goals', active: v === 'goals' },
       { icon: '🏆', action: `room/${room}/leaderboard`, label: 'Board', active: v === 'leaderboard' },
+      { icon: '📅', action: 'challenges', label: 'Challenges', active: v === 'challenges' || v === 'challenge' || v === 'import' || v === 'cohort-challenge' },
       { icon: '⚙️', action: `room/${room}/settings`, label: 'Settings', active: v === 'settings' },
       { icon: '🚪', action: 'global-settings', label: 'Account', active: false },
     ];
-    sidebar.innerHTML = items.map(i =>
-      `<button onclick="window.__nav('${i.action}')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${i.active ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="${i.label}">${i.icon}</button>`
-    ).join('');
+    sidebar.innerHTML = items.map(sidebarBtn).join('') + `<div class="flex-1"></div>` + toggleBtn;
   } else {
-    const isChallengesActive = v === 'challenges' || v === 'challenge' || v === 'import';
-    const isRoomsActive = v === 'rooms';
-    sidebar.innerHTML = `
-      <button onclick="window.__nav('rooms')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${isRoomsActive ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="Rooms">🎯</button>
-      <button onclick="window.__nav('challenges')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${isChallengesActive ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="Challenges">📅</button>
-      <div class="flex-1"></div>
-      <button onclick="window.__nav('global-settings')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t('surfaceHover')}" title="Settings">⚙️</button>
-    `;
+    const items = [
+      { icon: '🎯', action: 'rooms', label: 'Rooms', active: v === 'rooms' },
+      { icon: '📅', action: 'challenges', label: 'Challenges', active: v === 'challenges' || v === 'challenge' || v === 'import' },
+    ];
+    sidebar.innerHTML = items.map(sidebarBtn).join('') + `<div class="flex-1"></div>` + toggleBtn + sidebarBtn({ icon: '⚙️', action: 'global-settings', label: 'Settings', active: false });
   }
 }
+
+window.__toggleSidebar = () => {
+  const root = document.documentElement;
+  const isExpanded = root.getAttribute('data-sidebar-expanded') === 'true';
+  if (isExpanded) {
+    root.removeAttribute('data-sidebar-expanded');
+    localStorage.setItem('sidebar_expanded', '0');
+  } else {
+    root.setAttribute('data-sidebar-expanded', 'true');
+    localStorage.setItem('sidebar_expanded', '1');
+  }
+  // Re-render sidebar so the toggle icon flips.
+  renderSidebar();
+};
 
 // ============================================================
 // Topbar

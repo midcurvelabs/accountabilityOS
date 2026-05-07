@@ -111,8 +111,9 @@ function renderSidebar() {
     ).join('');
   } else {
     const isChallengesActive = v === 'challenges' || v === 'challenge' || v === 'import';
+    const isRoomsActive = v === 'rooms';
     sidebar.innerHTML = `
-      <div class="text-xl mt-2">🎯</div>
+      <button onclick="window.__nav('rooms')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${isRoomsActive ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="Rooms">🎯</button>
       <button onclick="window.__nav('challenges')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${isChallengesActive ? t('accentBg') + ' shadow-lg' : t('surfaceHover')}" title="Challenges">📅</button>
       <div class="flex-1"></div>
       <button onclick="window.__nav('global-settings')" class="w-10 h-10 rounded-lg flex items-center justify-center text-lg ${t('surfaceHover')}" title="Settings">⚙️</button>

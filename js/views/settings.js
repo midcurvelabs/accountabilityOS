@@ -29,8 +29,10 @@ export async function renderRoomSettings() {
           <div class="mb-3"><label class="${t('muted')} text-sm block mb-1">Invite Code</label>
             <div class="flex gap-2">
               <input type="text" class="${t('input')} flex-1 px-3 py-2 text-sm ${t('mono')}" value="${room.invite_code}" readonly>
-              <button class="${t('buttonSecondary')} px-3 py-2 text-sm" onclick="window.__copyCode('${room.invite_code}')">📋 Copy</button>
+              <button class="${t('buttonSecondary')} px-3 py-2 text-sm" onclick="window.__copyCode('${room.invite_code}')">📋 Code</button>
+              <button class="${t('button')} px-3 py-2 text-sm" onclick="window.__shareRoomLink('${room.invite_code}')">🔗 Share link</button>
             </div>
+            <p class="${t('muted')} text-xs mt-2">The link opens a sign-in / sign-up page; new users join automatically after creating their account.</p>
           </div>
         </div>
 

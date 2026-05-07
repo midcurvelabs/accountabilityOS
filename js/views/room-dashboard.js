@@ -173,7 +173,8 @@ export async function renderRoomDashboard() {
             </h1>
             <div class="${t('muted')} text-sm flex items-center gap-3">
               <span>${members.length} members</span>
-              <span class="cursor-pointer ${t('mono')} text-xs" onclick="window.__copyCode('${room.invite_code}')" title="Click to copy">🔑 ${room.invite_code}</span>
+              <span class="cursor-pointer ${t('mono')} text-xs" onclick="window.__copyCode('${room.invite_code}')" title="Click to copy code">🔑 ${room.invite_code}</span>
+              <button class="${t('buttonSecondary')} text-xs px-2 py-0.5" onclick="window.__shareRoomLink('${room.invite_code}')" title="Share invite link">🔗 Share</button>
             </div>
           </div>
           <div class="flex items-center gap-3">
@@ -529,6 +530,32 @@ window.__selfReport = async (notToDoId) => {
 window.__copyCode = (code) => {
   navigator.clipboard?.writeText(code);
   toast('Invite code copied!');
+};
+
+window.__shareRoomLink = async (code) => {
+  const url = `${location.origin}/#join/${code}`;
+  // Try Web Share API first (mobile + macOS Safari + Chrome on macOS support it).
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Join my AccountabilityOS room',
+        text: `Join my room — sign in or sign up at the link to start tracking together.`,
+        url,
+      });
+      return;
+    } catch (err) {
+      // User cancelled the native share sheet — fall through to clipboard.
+      if (err?.name === 'AbortError') return;
+    }
+  }
+  // Fallback: copy to clipboard.
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Invite link copied — share it anywhere');
+  } catch {
+    // Final fallback: prompt the user to copy manually.
+    prompt('Copy this invite link:', url);
+  }
 };
 
 window.__showDeepWork = (roomId) => {

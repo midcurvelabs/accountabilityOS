@@ -16,6 +16,10 @@ export function parseRoute(hash) {
     if (parts[2] === 'challenge' && parts[3]) {
       return { view: 'cohort-challenge', roomId: parts[1], challengeId: parts[3] };
     }
+    // Sub-route: room/<id>/challenges → list of challenges scoped to this room
+    if (parts[2] === 'challenges') {
+      return { view: 'room-challenges', roomId: parts[1] };
+    }
     return { view: parts[2] || 'room-dashboard', roomId: parts[1] };
   }
 

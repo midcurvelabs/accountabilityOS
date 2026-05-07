@@ -21,6 +21,7 @@ import { renderJoinRoom } from './views/join.js';
 import { renderChallenges } from './views/challenges.js';
 import { renderChallenge, renderImport } from './views/challenge.js';
 import { renderCohortChallenge } from './views/cohort-challenge.js';
+import { renderRoomChallenges } from './views/room-challenges.js';
 import { showOnboardingOverlay, shouldShowOnboarding } from './views/onboarding.js';
 import './views/transcript.js';
 
@@ -59,6 +60,7 @@ function render() {
       case 'pot':               return renderPotView();
       case 'settings':          return renderRoomSettings();
       case 'cohort-challenge':  return renderCohortChallenge();
+      case 'room-challenges':   return renderRoomChallenges();
     }
   }
 
@@ -119,7 +121,7 @@ function renderSidebar() {
       { icon: '🏠', action: `room/${room}`, label: 'Dashboard', active: v === 'room-dashboard' },
       { icon: '📋', action: `room/${room}/goals`, label: 'Goals', active: v === 'goals' },
       { icon: '🏆', action: `room/${room}/leaderboard`, label: 'Board', active: v === 'leaderboard' },
-      { icon: '📅', action: 'challenges', label: 'Challenges', active: v === 'challenges' || v === 'challenge' || v === 'import' || v === 'cohort-challenge' },
+      { icon: '📅', action: `room/${room}/challenges`, label: 'Room challenges', active: v === 'room-challenges' || v === 'cohort-challenge' },
       { icon: '⚙️', action: `room/${room}/settings`, label: 'Settings', active: v === 'settings' },
       { icon: '🚪', action: 'global-settings', label: 'Account', active: false },
     ];
@@ -127,7 +129,7 @@ function renderSidebar() {
   } else {
     const items = [
       { icon: '🎯', action: 'rooms', label: 'Rooms', active: v === 'rooms' },
-      { icon: '📅', action: 'challenges', label: 'Challenges', active: v === 'challenges' || v === 'challenge' || v === 'import' },
+      { icon: '📅', action: 'challenges', label: 'My challenges', active: v === 'challenges' || v === 'challenge' || v === 'import' },
     ];
     sidebar.innerHTML = items.map(sidebarBtn).join('') + `<div class="flex-1"></div>` + toggleBtn + sidebarBtn({ icon: '⚙️', action: 'global-settings', label: 'Settings', active: false });
   }

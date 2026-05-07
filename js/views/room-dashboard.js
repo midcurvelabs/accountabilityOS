@@ -182,12 +182,15 @@ export async function renderRoomDashboard() {
           </div>
         </div>
 
-        ${cohortCards.length > 0 ? `
-          <div class="${t('card')} p-4 mb-6">
-            <div class="flex items-center justify-between mb-3">
-              <div class="${t('heading')} font-bold text-sm">📅 Cohort challenges</div>
-              <div class="${t('muted')} text-xs">${cohortCards.length} active</div>
+        <div class="${t('card')} p-4 mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="${t('heading')} font-bold text-sm">📅 Cohort challenges</div>
+            <div class="flex items-center gap-3">
+              ${cohortCards.length > 0 ? `<div class="${t('muted')} text-xs">${cohortCards.length} active</div>` : ''}
+              <button class="${t('buttonSecondary')} text-xs px-2.5 py-1" onclick="window.__importToRoom()">+ Add</button>
             </div>
+          </div>
+          ${cohortCards.length > 0 ? `
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               ${cohortCards.map(({ rep }) => {
                 const memberCount = roomChallenges.filter(c => (c.source_token || c.title) === (rep.source_token || rep.title)).length;
@@ -202,8 +205,10 @@ export async function renderRoomDashboard() {
                 `;
               }).join('')}
             </div>
-          </div>
-        ` : ''}
+          ` : `
+            <div class="${t('muted')} text-xs italic">No cohort challenges yet — import a 30-day plan and everyone in this room can run it together.</div>
+          `}
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="lg:col-span-2 space-y-4">

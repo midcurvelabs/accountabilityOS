@@ -140,6 +140,25 @@ export async function updateChallengeDayNote(dayId, note) {
 }
 
 /**
+ * Edit a challenge day's title and/or description.
+ * RLS allows the challenge owner to update their own days.
+ */
+export async function updateChallengeDay(dayId, { title, description }) {
+  const patch = {};
+  if (title !== undefined)       patch.title       = (title || '').trim() || 'Untitled';
+  if (description !== undefined) patch.description = (description || '').trim() || null;
+  if (Object.keys(patch).length === 0) return null;
+  const { data, error } = await supabase
+    .from('challenge_days')
+    .update(patch)
+    .eq('id', dayId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Share a solo challenge to a room (or unshare with roomId = null).
  * No UI surface in Phase 1, but the function lands now so v2 can flip the bit.
  */

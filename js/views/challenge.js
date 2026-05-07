@@ -12,6 +12,7 @@ import {
   fetchChallengeWithDays,
   toggleChallengeDay,
   updateChallengeDayNote,
+  updateChallengeDay,
   createChallengeFromPlan,
   shareChallengeToRoom,
 } from '../data/challenges.js';
@@ -201,8 +202,25 @@ function dayRow(d, opts = {}) {
           <span class="${t('mono')} ${t('accent')} text-sm font-bold shrink-0">${num}</span>
           <div class="${d.completed ? 'line-through' : ''} font-medium text-sm">${escapeHtml(d.title)}</div>
           ${isCurrentDay ? `<span class="${t('accentBg')} text-xs px-1.5 py-0.5 rounded-full ${t('mono')}">today</span>` : ''}
+          <button class="${t('muted')} text-xs hover:${t('heading')} shrink-0 ml-auto" title="Edit task" onclick="window.__toggleEditDay('${d.id}')">✏️</button>
         </div>
         ${d.description ? `<div class="${t('muted')} text-xs mt-1">${escapeHtml(d.description)}</div>` : ''}
+        <div id="edit-day-${d.id}" class="hidden ${t('surface')} rounded-xl p-2 mt-2">
+          <input
+            id="edit-day-title-${d.id}"
+            class="${t('input')} w-full px-2 py-1 text-sm font-medium mb-1.5"
+            value="${escapeAttr(d.title)}"
+            placeholder="Task title">
+          <textarea
+            id="edit-day-desc-${d.id}"
+            class="${t('input')} w-full px-2 py-1 text-xs mb-1.5"
+            rows="2"
+            placeholder="Description (optional)">${escapeHtml(d.description || '')}</textarea>
+          <div class="flex justify-end gap-1.5">
+            <button class="${t('buttonSecondary')} px-3 py-1 text-xs" onclick="window.__toggleEditDay('${d.id}')">Cancel</button>
+            <button class="${t('button')} px-3 py-1 text-xs" onclick="window.__saveEditDay('${d.id}')">Save</button>
+          </div>
+        </div>
         <details class="mt-2" ${hasNote ? 'open' : ''}>
           <summary class="${t('muted')} text-xs cursor-pointer hover:${t('heading')}">${hasNote ? '✏️ Edit note' : '+ Add a note'}</summary>
           <textarea
@@ -463,5 +481,39 @@ window.__deleteDayPost = async (postId) => {
     await renderChallenge();
   } catch (err) {
     toast(err.message || 'Failed to delete', 'error');
+  }
+};
+
+window.__toggleEditDay = (dayId) => {
+  const panel = document.getElementById(`edit-day-${dayId}`);
+  if (!panel) return;
+  const wasHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden');
+  if (wasHidden) {
+    setTimeout(() => document.getElementById(`edit-day-title-${dayId}`)?.focus(), 30);
+  }
+};
+
+window.__saveEditDay = async (dayId) => {
+  const titleEl = document.getElementById(`edit-day-title-${dayId}`);
+  const descEl  = document.getElementById(`edit-day-desc-${dayId}`);
+  const title = titleEl?.value ?? '';
+  const description = descEl?.value ?? '';
+  if (!title.trim()) {
+    toast('Title cannot be empty', 'error');
+    return;
+  }
+  try {
+    await updateChallengeDay(dayId, { title, description });
+    // Update local cache so re-render shows new values without re-fetching.
+    const day = cache.days.find(d => d.id === dayId);
+    if (day) {
+      day.title = title.trim();
+      day.description = description.trim() || null;
+    }
+    toast('Task updated', 'success');
+    await renderChallenge();
+  } catch (err) {
+    toast(err.message || 'Failed to update', 'error');
   }
 };
